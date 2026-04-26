@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THOUGHTRONS — Electro-Optics Strategy</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #05070b; color: #e6edf3;
+    font-family: -apple-system, "SF Pro Display", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; overflow: hidden;
+  }
+  #app {
+    display: grid;
+    grid-template-columns: 300px 1fr 300px;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #0d1421 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 110%, #0e1024 0%, transparent 50%),
+      #05070b;
+  }
+  header {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #1a2332;
+    background: rgba(7, 10, 16, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 5;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 600; font-size: 13px; letter-spacing: 0.28em;
+  }
+  .brand-logo {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #67e8f9, #0891b2 55%, #0e2a3b 100%);
+    box-shadow: 0 0 16px #22d3ee99, 0 0 4px #67e8f9, inset 0 0 6px rgba(255,255,255,0.4);
+  }
+  .brand-name { color: #67e8f9; font-weight: 700; }
+  .brand-tag { color: #475569; font-size: 10px; letter-spacing: 0.2em; }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .ctrl {
+    background: #131b2e; border: 1px solid #1f2a44; color: #cbd5e1;
+    padding: 7px 14px; border-radius: 6px; font-size: 12px;
+    letter-spacing: 0.05em; cursor: pointer; font-family: inherit;
+    transition: all 150ms;
+  }
+  .ctrl:hover { border-color: #22d3ee; color: #67e8f9; }
+  .ctrl.primary {
+    background: linear-gradient(180deg, #0e7490, #0891b2);
+    border-color: #22d3ee; color: #ecfeff;
+  }
+  .ctrl.primary:hover { box-shadow: 0 0 16px #22d3ee44; }
+  select.ctrl { padding: 6px 10px; }
+
+  aside {
+    padding: 18px 18px 24px;
+    overflow-y: auto;
+    border-right: 1px solid #131b2e;
+  }
+  aside.right { border-right: none; border-left: 1px solid #131b2e; }
+  .panel-section { margin-bottom: 22px; }
+  .panel-title {
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: #475569; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-title .pt-hint {
+    color: #334155; font-size: 9px; letter-spacing: 0.15em;
+    cursor: help; border-bottom: 1px dotted #334155;
+  }
+  .panel-title .pt-hint:hover { color: #67e8f9; border-color: #67e8f9; }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid #131b2e; font-size: 13px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-key { color: #94a3b8; }
+  .stat-val { color: #e2e8f0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-val.pos { color: #67e8f9; }
+  .stat-val.neg { color: #f0abfc; }
+  .stat-val.muted { color: #64748b; font-weight: 400; }
+
+  /* Toggle switch */
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; font-size: 13px; cursor: pointer;
+    user-select: none;
+  }
+  .toggle-row .tk { color: #cbd5e1; }
+  .toggle {
+    position: relative; width: 36px; height: 20px;
+    background: #1f2a44; border-radius: 10px;
+    transition: background 150ms;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #cbd5e1; top: 3px; left: 3px;
+    transition: all 150ms;
+  }
+  .toggle.on { background: #0e7490; }
+  .toggle.on::after { left: 19px; background: #ecfeff; box-shadow: 0 0 8px #22d3ee; }
+
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; background: linear-gradient(180deg, #0e7490, #075568);
+    border: 1px solid #22d3ee; border-radius: 12px;
+    color: #ecfeff; font-size: 11px; letter-spacing: 0.18em;
+    font-weight: 600; box-shadow: 0 0 10px rgba(34,211,238,0.3);
+  }
+  .tier-badge.tier-trainee { background: linear-gradient(180deg, #475569, #334155); border-color: #64748b; box-shadow: none; color: #cbd5e1; }
+  .tier-badge.tier-apprentice { background: linear-gradient(180deg, #115e59, #134e4a); border-color: #14b8a6; box-shadow: 0 0 8px rgba(20,184,166,0.25); }
+  .tier-badge.tier-adjunct { background: linear-gradient(180deg, #0e7490, #075568); border-color: #22d3ee; }
+  .tier-badge.tier-researcher { background: linear-gradient(180deg, #6d28d9, #4c1d95); border-color: #a78bfa; box-shadow: 0 0 10px rgba(167,139,250,0.35); }
+  .tier-badge.tier-senior { background: linear-gradient(180deg, #be185d, #9d174d); border-color: #f472b6; box-shadow: 0 0 12px rgba(244,114,182,0.4); }
+  .tier-badge.tier-principal { background: linear-gradient(180deg, #d97706, #b45309); border-color: #fbbf24; box-shadow: 0 0 14px rgba(251,191,36,0.45); }
+
+  .last10 { display: flex; gap: 4px; padding: 4px 0; }
+  .last10 .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #1a2332; border: 1px solid #243149;
+  }
+  .last10 .dot.win { background: #22d3ee; border-color: #22d3ee; box-shadow: 0 0 6px #22d3ee88; }
+  .last10 .dot.loss { background: #1a2332; border-color: #f0abfc55; }
+
+  .stake-line {
+    display: flex; gap: 6px; align-items: center;
+    font-family: "SF Mono", Menlo, monospace; font-size: 12px;
+  }
+  .stake-line .win-amt { color: #67e8f9; }
+  .stake-line .loss-amt { color: #f0abfc; }
+  .stake-line .vs { color: #475569; }
+
+  .turn-indicator {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, #0d1421, #0a0f1c);
+    border: 1px solid #1f2a44; border-radius: 8px; margin-bottom: 16px;
+  }
+  .turn-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+  .turn-dot.p1 { background: #22d3ee; color: #22d3ee; }
+  .turn-dot.p2 { background: #e879f9; color: #e879f9; }
+  .turn-text { font-size: 13px; }
+
+  .captured-tray {
+    display: flex; flex-wrap: wrap; gap: 4px; min-height: 30px;
+    padding: 8px; background: #0a0f1c; border: 1px solid #1f2a44; border-radius: 6px;
+  }
+  .captured-tray.p2 { border-color: #5b1c70; }
+
+  .history-list {
+    max-height: 180px; overflow-y: auto;
+    font-size: 12px; font-family: "SF Mono", Menlo, monospace;
+    background: #0a0f1c; border: 1px solid #1f2a44;
+    border-radius: 6px; padding: 8px;
+  }
+  .history-row { display: flex; justify-content: space-between; padding: 3px 4px; color: #94a3b8; }
+  .history-row .num { color: #475569; width: 22px; }
+
+  /* ========= OPTICAL BENCH BOARD ========= */
+  main {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .bench-wrap {
+    position: relative;
+    width: min(80vh, 100%);
+    aspect-ratio: 1 / 1;
+    padding: 36px;
+  }
+  .bench-surface {
+    position: absolute; inset: 28px; border-radius: 4px;
+    background:
+      radial-gradient(ellipse at 25% 30%, rgba(34,211,238,0.04), transparent 60%),
+      radial-gradient(ellipse at 75% 80%, rgba(232,121,249,0.03), transparent 60%),
+      linear-gradient(135deg, #0c1220 0%, #060a14 100%);
+    box-shadow:
+      0 0 0 1px rgba(125, 145, 180, 0.18),
+      0 0 0 2px rgba(20, 30, 50, 0.7),
+      0 0 0 3px rgba(125, 145, 180, 0.07),
+      inset 0 0 30px rgba(0, 0, 0, 0.7),
+      0 18px 48px rgba(0, 0, 0, 0.7);
+  }
+  .bench-surface::before {
+    content: ''; position: absolute; inset: 6px; border-radius: 2px;
+    background-image:
+      radial-gradient(circle at center, rgba(0,0,0,0.6) 1px, transparent 1.6px),
+      radial-gradient(circle at center, rgba(180,200,230,0.05) 0.4px, transparent 0.8px);
+    background-size: 12.5% 12.5%, 12.5% 12.5%;
+    background-position: 50% 50%, 50.4% 50.4%;
+    pointer-events: none; opacity: 0.6;
+  }
+  .bench-surface::after {
+    content: ''; position: absolute; inset: 0; border-radius: 4px;
+    background: linear-gradient(120deg, rgba(255,255,255,0.025) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.015) 100%);
+    pointer-events: none;
+  }
+
+  .mm-scale {
+    position: absolute;
+    color: #475569; font-family: "SF Mono", Menlo, monospace;
+    font-size: 8px; letter-spacing: 0.05em;
+    pointer-events: none; user-select: none;
+  }
+  .mm-scale.top, .mm-scale.bottom { left: 28px; right: 28px; height: 18px; display: flex; justify-content: space-between; }
+  .mm-scale.top { top: 8px; }
+  .mm-scale.bottom { bottom: 8px; }
+  .mm-scale.left, .mm-scale.right { top: 28px; bottom: 28px; width: 22px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+  .mm-scale.left { left: 4px; }
+  .mm-scale.right { right: 4px; }
+  .mm-scale span { display: block; }
+
+  /* Subtle etched marking in the breadboard frame — does NOT overlap board stations */
+  .bench-tag {
+    position: absolute;
+    top: 12px; left: 36px;
+    z-index: 3;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 7px;
+    letter-spacing: 0.22em;
+    color: rgba(148, 163, 184, 0.45);
+    pointer-events: none;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .bench-tag b { color: rgba(180, 200, 230, 0.7); letter-spacing: 0.28em; }
+
+  .board {
+    position: absolute; inset: 28px; z-index: 1;
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    gap: 0; border-radius: 2px;
+  }
+  .station {
+    position: relative; cursor: pointer;
+    transition: all 120ms;
+  }
+  .station::before {
+    content: ''; position: absolute;
+    left: 50%; top: 50%; width: 14%; height: 14%;
+    transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #03060c, #0a0f1a 60%, #1a2332 100%);
+    box-shadow:
+      inset 0 1px 1.5px rgba(255,255,255,0.06),
+      inset 0 -1px 1.5px rgba(0,0,0,0.6),
+      0 0 1px rgba(125, 145, 180, 0.1);
+    pointer-events: none;
+  }
+  .station:hover::after {
+    content: ''; position: absolute; inset: 18%;
+    border-radius: 50%; border: 1px solid rgba(34, 211, 238, 0.25);
+    pointer-events: none;
+  }
+  .station.selected::after {
+    content: ''; position: absolute; inset: 14%;
+    border-radius: 50%; border: 2px solid #22d3ee;
+    box-shadow: 0 0 16px #22d3ee99, inset 0 0 12px rgba(34,211,238,0.25);
+    animation: select-pulse 1.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes select-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  .station.move-target::after {
+    content: ''; position: absolute;
+    left: 50%; top: 50%; width: 24%; height: 24%;
+    transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(circle, rgba(103, 232, 249, 0.7), rgba(34, 211, 238, 0));
+    pointer-events: none;
+  }
+  .station.move-capture::after {
+    content: ''; position: absolute; inset: 8%; border-radius: 50%;
+    border: 1.5px solid rgba(244, 63, 94, 0.7);
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.4), inset 0 0 8px rgba(244, 63, 94, 0.2);
+    pointer-events: none;
+  }
+  /* Movement-guide overlay (lower opacity, different color so it doesn't conflict with active selection) */
+  .station.guide-target::after {
+    content: ''; position: absolute;
+    left: 50%; top: 50%; width: 18%; height: 18%;
+    transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(circle, rgba(168, 233, 255, 0.5), rgba(168, 233, 255, 0));
+    pointer-events: none;
+  }
+  .station.guide-capture::after {
+    content: ''; position: absolute; inset: 18%; border-radius: 50%;
+    border: 1px dashed rgba(244, 114, 182, 0.55);
+    pointer-events: none;
+  }
+  .station.last-move::before {
+    box-shadow:
+      inset 0 1px 1.5px rgba(255,255,255,0.06),
+      inset 0 -1px 1.5px rgba(0,0,0,0.6),
+      0 0 6px rgba(125, 211, 252, 0.4);
+  }
+  .station.beam-hover::after {
+    content: ''; position: absolute; inset: 14%; border-radius: 50%;
+    border: 1.5px solid #22d3ee;
+    box-shadow: 0 0 14px #22d3eebb;
+    pointer-events: none;
+  }
+
+  /* ========= PIECES (3D look) ========= */
+  .piece {
+    position: absolute; inset: 14%;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 2;
+    transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .piece.p1 { color: #67e8f9; filter: drop-shadow(0 0 7px #22d3eecc) drop-shadow(0 3px 4px rgba(0,0,0,0.7)); }
+  .piece.p2 { color: #f0abfc; filter: drop-shadow(0 0 7px #e879f9bb) drop-shadow(0 3px 4px rgba(0,0,0,0.7)); }
+  .piece svg { width: 100%; height: 100%; overflow: visible; }
+  .piece::before {
+    content: ''; position: absolute;
+    bottom: -2%; left: 25%; width: 50%; height: 7%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.55), transparent 60%);
+    pointer-events: none;
+  }
+  .piece .pol-tick {
+    position: absolute;
+    width: 70%; height: 2px;
+    background: currentColor; border-radius: 1px;
+    top: 50%; left: 15%;
+    transform-origin: center;
+    opacity: 0.85;
+    box-shadow: 0 0 5px currentColor;
+    pointer-events: none;
+  }
+  .piece .coh-bar {
+    position: absolute; bottom: -8%; left: 15%;
+    width: 70%; height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 1px; overflow: hidden;
+  }
+  .piece .coh-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22d3ee, #67e8f9);
+    transition: width 200ms;
+  }
+  .piece.p2 .coh-fill { background: linear-gradient(90deg, #e879f9, #f0abfc); }
+
+  /* ========= TOOLTIP (movement guide) ========= */
+  .guide-tooltip {
+    position: absolute;
+    background: rgba(7, 11, 20, 0.95);
+    border: 1px solid #22d3ee44;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #cbd5e1;
+    pointer-events: none;
+    z-index: 30;
+    max-width: 260px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 18px rgba(34,211,238,0.15);
+    line-height: 1.5;
+    opacity: 0; transform: translateY(4px);
+    transition: opacity 120ms, transform 120ms;
+  }
+  .guide-tooltip.show { opacity: 1; transform: translateY(0); }
+  .guide-tooltip .gt-name { color: #67e8f9; font-weight: 700; letter-spacing: 0.1em; font-size: 11px; }
+  .guide-tooltip .gt-tag { color: #475569; font-size: 10px; margin-left: 6px; letter-spacing: 0.1em; }
+  .guide-tooltip .gt-move { color: #94a3b8; margin-top: 4px; font-style: italic; }
+  .guide-tooltip .gt-desc { color: #cbd5e1; margin-top: 6px; }
+  .guide-tooltip .gt-physics {
+    margin-top: 8px; padding: 6px 8px;
+    background: #0a0f1c; border-left: 2px solid #22d3ee;
+    color: #94a3b8; font-size: 11px;
+    font-family: "SF Mono", Menlo, monospace;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* ========= LASER FACING ARROW + MIRROR DIAGONAL ========= */
+  .piece .facing-arrow {
+    position: absolute;
+    width: 22%; height: 22%;
+    color: currentColor;
+    pointer-events: none;
+    transition: transform 200ms;
+  }
+  .piece .facing-arrow.N { top: -10%; left: 39%; }
+  .piece .facing-arrow.S { bottom: -10%; left: 39%; transform: rotate(180deg); }
+  .piece .facing-arrow.E { right: -10%; top: 39%; transform: rotate(90deg); }
+  .piece .facing-arrow.W { left: -10%; top: 39%; transform: rotate(-90deg); }
+  .piece .facing-arrow svg { width: 100%; height: 100%; filter: drop-shadow(0 0 4px currentColor); }
+
+  /* Rotation control: floating ring around a selected rotatable piece */
+  .rotate-ctl {
+    position: absolute;
+    inset: -8%;
+    border-radius: 50%;
+    border: 1px dashed rgba(34, 211, 238, 0.4);
+    pointer-events: none;
+    animation: rot-pulse 2s ease-in-out infinite;
+  }
+  @keyframes rot-pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+  .rotate-btn {
+    position: absolute;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, rgba(14,116,144,0.9), rgba(7,85,104,0.9));
+    border: 1px solid #22d3ee;
+    color: #ecfeff;
+    font-size: 16px;
+    cursor: pointer;
+    pointer-events: all;
+    z-index: 30;
+    box-shadow: 0 0 12px rgba(34,211,238,0.5);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rotate-btn:hover { box-shadow: 0 0 18px rgba(34,211,238,0.9); transform: scale(1.08); }
+
+  /* Beam fire animation (the laser shooting through the bench) */
+  .fire-beam {
+    position: absolute;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #22d3ee, #ecfeff, #22d3ee, transparent);
+    box-shadow: 0 0 18px #22d3ee, 0 0 36px #22d3ee, 0 0 6px #ecfeff;
+    transform-origin: left center;
+    pointer-events: none;
+    z-index: 9;
+    border-radius: 2px;
+    animation: fire-beam-anim 800ms ease-out forwards;
+  }
+  .fire-beam.p2 {
+    background: linear-gradient(90deg, transparent, #e879f9, #fae8ff, #e879f9, transparent);
+    box-shadow: 0 0 18px #e879f9, 0 0 36px #e879f9, 0 0 6px #fae8ff;
+  }
+  @keyframes fire-beam-anim {
+    0%   { opacity: 0; transform: scaleX(0); }
+    25%  { opacity: 1; transform: scaleX(1); }
+    75%  { opacity: 1; transform: scaleX(1); }
+    100% { opacity: 0; transform: scaleX(1); }
+  }
+
+  /* ========= BEAM PREVIEW + LASER FIRE ========= */
+  .beam-preview {
+    position: absolute; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.9), rgba(236, 254, 255, 1), rgba(103, 232, 249, 0.9), transparent);
+    box-shadow: 0 0 10px #22d3ee, 0 0 20px rgba(34,211,238,0.5);
+    transform-origin: left center;
+    pointer-events: none; z-index: 5;
+    border-radius: 1px;
+  }
+  .laser-beam {
+    position: absolute; height: 3px;
+    background: linear-gradient(90deg, transparent, #22d3ee, #ecfeff, #22d3ee, transparent);
+    box-shadow: 0 0 14px #22d3ee, 0 0 28px #22d3ee, 0 0 4px #ecfeff;
+    transform-origin: left center;
+    pointer-events: none; z-index: 10;
+    animation: laser-fire 600ms ease-out forwards;
+    border-radius: 2px;
+  }
+  .laser-beam.p2 {
+    background: linear-gradient(90deg, transparent, #e879f9, #fae8ff, #e879f9, transparent);
+    box-shadow: 0 0 14px #e879f9, 0 0 28px #e879f9, 0 0 4px #fae8ff;
+  }
+  @keyframes laser-fire {
+    0% { opacity: 0; transform: scaleX(0); }
+    20% { opacity: 1; transform: scaleX(1); }
+    80% { opacity: 1; transform: scaleX(1); }
+    100% { opacity: 0; transform: scaleX(1); }
+  }
+  .particle {
+    position: absolute; width: 4px; height: 4px;
+    border-radius: 50%; background: #ecfeff;
+    box-shadow: 0 0 8px #22d3ee;
+    pointer-events: none; z-index: 11;
+    animation: particle 700ms ease-out forwards;
+  }
+  @keyframes particle {
+    0% { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: var(--end) scale(0.2); }
+  }
+  .score-pop {
+    position: absolute; color: #67e8f9;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 13px; font-weight: 700;
+    pointer-events: none; z-index: 12;
+    text-shadow: 0 0 10px #22d3ee;
+    animation: score-pop 1.4s ease-out forwards;
+  }
+  .score-pop.p2 { color: #f0abfc; text-shadow: 0 0 10px #e879f9; }
+  @keyframes score-pop {
+    0% { opacity: 0; transform: translateY(0); }
+    20% { opacity: 1; transform: translateY(-10px); }
+    100% { opacity: 0; transform: translateY(-40px); }
+  }
+
+  /* ========= MODAL ========= */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(5, 7, 11, 0.85);
+    backdrop-filter: blur(10px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: linear-gradient(180deg, #0d1421, #0a0e18);
+    border: 1px solid #1f2a44; border-radius: 14px;
+    padding: 30px;
+    max-width: 600px; width: 92%;
+    max-height: 86vh; overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 60px rgba(34,211,238,0.08);
+  }
+  .modal h2 {
+    margin: 0 0 6px; font-size: 20px;
+    color: #67e8f9; letter-spacing: 0.04em;
+  }
+  .modal p { color: #cbd5e1; line-height: 1.65; margin: 0 0 14px; font-size: 14px; }
+  .modal .meta { color: #475569; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 6px; }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .modal table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  .modal table th, .modal table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #1f2a44; vertical-align: top; }
+  .modal table th { color: #94a3b8; font-weight: 600; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .modal table td { color: #cbd5e1; }
+  .modal table td.right { text-align: right; font-family: "SF Mono", monospace; }
+  .modal .qs-step {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid #1f2a44;
+  }
+  .modal .qs-step:last-child { border-bottom: none; }
+  .modal .qs-num {
+    flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(180deg, #0e7490, #075568);
+    border: 1px solid #22d3ee;
+    display: flex; align-items: center; justify-content: center;
+    color: #ecfeff; font-weight: 700; font-size: 13px;
+  }
+  .modal .qs-content { flex: 1; }
+  .modal .qs-content b { color: #67e8f9; }
+  .physics-note {
+    background: #0a0f1c;
+    border-left: 3px solid #22d3ee;
+    padding: 12px 14px; margin: 14px 0;
+    font-size: 12px; color: #94a3b8;
+    line-height: 1.5;
+    font-family: "SF Mono", Menlo, monospace;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* Share-link modal specifics */
+  .share-link-box {
+    display: flex; gap: 8px; align-items: stretch;
+    background: #0a0f1c; border: 1px solid #1f2a44;
+    border-radius: 6px; padding: 10px;
+    margin: 14px 0;
+  }
+  .share-link-box input {
+    flex: 1;
+    background: transparent; border: none; outline: none;
+    color: #67e8f9; font-family: "SF Mono", monospace;
+    font-size: 12px;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px;
+    left: 50%; transform: translateX(-50%);
+    background: rgba(13, 20, 33, 0.95);
+    border: 1px solid #22d3ee44;
+    color: #ecfeff; padding: 10px 18px; border-radius: 24px;
+    font-size: 13px; z-index: 200;
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+    opacity: 0; pointer-events: none; transition: opacity 200ms;
+    max-width: 480px; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1f2a44; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2d3b5a; }
+
+  .gameover-banner {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; z-index: 40; pointer-events: none;
+  }
+  .gameover-banner h1 {
+    font-size: 44px; margin: 0;
+    background: linear-gradient(90deg, #22d3ee, #e879f9);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    letter-spacing: 0.18em;
+  }
+  .gameover-banner p { color: #94a3b8; margin: 8px 0 0; font-size: 14px; }
+
+  .diff-pills { display: flex; gap: 4px; }
+  .diff-pill {
+    flex: 1; text-align: center; padding: 6px 0;
+    font-size: 10px; letter-spacing: 0.12em;
+    background: #131b2e; border: 1px solid #1f2a44;
+    color: #94a3b8; cursor: pointer;
+    border-radius: 4px; transition: all 150ms;
+    font-weight: 600;
+  }
+  .diff-pill.active { background: #0e7490; border-color: #22d3ee; color: #ecfeff; }
+
+  @media (max-width: 1100px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: 56px auto auto; }
+    aside { display: none; }
+    main { padding: 12px; }
+  }
+
+  /* ========= LANDING / INTRO ANIMATION ========= */
+  #landing {
+    position: fixed; inset: 0; z-index: 1000;
+    background:
+      radial-gradient(ellipse at 50% 30%, #0d1421 0%, #05070b 65%),
+      #05070b;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  #landing.dismissed {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 600ms ease-in;
+  }
+  #landing .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at center, rgba(34, 211, 238, 0.08) 1px, transparent 1.8px),
+      radial-gradient(circle at center, rgba(232, 121, 249, 0.04) 0.5px, transparent 1px);
+    background-size: 32px 32px, 32px 32px;
+    background-position: 50% 50%, 50.5% 50.5%;
+    opacity: 0;
+    animation: landing-grid-fade 1.4s ease-out 0.2s forwards;
+    pointer-events: none;
+  }
+  @keyframes landing-grid-fade { to { opacity: 1; } }
+
+  #landing .scan-line {
+    position: absolute; left: 0; right: 0;
+    top: 50%; transform: translateY(-50%);
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.6) 20%, rgba(236,254,255,1) 50%, rgba(34,211,238,0.6) 80%, transparent 100%);
+    box-shadow: 0 0 12px rgba(34,211,238,0.7);
+    animation: landing-scan 1.8s ease-out 0.1s forwards;
+    pointer-events: none;
+    opacity: 0;
+  }
+  @keyframes landing-scan {
+    0%   { opacity: 0; transform: translateY(-50%) scaleX(0); }
+    25%  { opacity: 1; transform: translateY(-50%) scaleX(1); }
+    100% { opacity: 0; transform: translateY(-50%) scaleX(1); }
+  }
+
+  #landing .l-content {
+    position: relative; z-index: 2;
+    text-align: center;
+    max-width: 700px;
+    padding: 0 24px;
+  }
+
+  #landing .l-meta {
+    color: #475569;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    margin-bottom: 22px;
+    opacity: 0;
+    animation: l-fade-in 0.5s ease-out 0.5s forwards;
+  }
+
+  #landing .l-title {
+    font-size: clamp(40px, 7vw, 72px);
+    letter-spacing: 0.36em;
+    color: #67e8f9;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 0 24px rgba(34, 211, 238, 0.7), 0 0 48px rgba(34, 211, 238, 0.3);
+    line-height: 1;
+  }
+  #landing .l-title span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: l-letter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes l-letter { to { opacity: 1; transform: translateY(0); } }
+  #landing .l-title span:nth-child(1)  { animation-delay: 0.95s; }
+  #landing .l-title span:nth-child(2)  { animation-delay: 1.05s; }
+  #landing .l-title span:nth-child(3)  { animation-delay: 1.15s; }
+  #landing .l-title span:nth-child(4)  { animation-delay: 1.25s; }
+  #landing .l-title span:nth-child(5)  { animation-delay: 1.35s; }
+  #landing .l-title span:nth-child(6)  { animation-delay: 1.45s; }
+  #landing .l-title span:nth-child(7)  { animation-delay: 1.55s; }
+  #landing .l-title span:nth-child(8)  { animation-delay: 1.65s; }
+  #landing .l-title span:nth-child(9)  { animation-delay: 1.75s; }
+  #landing .l-title span:nth-child(10) { animation-delay: 1.85s; }
+  #landing .l-title span:nth-child(11) { animation-delay: 1.95s; }
+
+  #landing .l-tagline {
+    color: #94a3b8;
+    font-size: clamp(11px, 1.3vw, 14px);
+    letter-spacing: 0.4em;
+    font-weight: 600;
+    margin: 24px 0 8px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: l-fade-up 0.5s ease-out 2.3s forwards;
+  }
+  #landing .l-sub {
+    color: #475569;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    font-style: italic;
+    margin-bottom: 36px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: l-fade-up 0.5s ease-out 2.6s forwards;
+  }
+  @keyframes l-fade-up { to { opacity: 1; transform: translateY(0); } }
+  @keyframes l-fade-in { to { opacity: 1; } }
+
+  /* INITIALIZE button */
+  #landing .l-button-wrap {
+    position: relative;
+    display: inline-block;
+    width: 240px; height: 56px;
+    opacity: 0;
+    animation: l-fade-up 0.5s ease-out 3.0s forwards;
+  }
+  #landing .l-button {
+    position: relative;
+    z-index: 2;
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, rgba(14, 116, 144, 0.55), rgba(7, 85, 104, 0.55));
+    border: 1px solid #22d3ee;
+    color: #ecfeff;
+    border-radius: 30px;
+    font-size: 13px;
+    letter-spacing: 0.36em;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.35), inset 0 0 12px rgba(34, 211, 238, 0.2);
+    transition: all 200ms;
+    animation: l-pulse 2.4s ease-in-out 3.6s infinite;
+  }
+  #landing .l-button:hover {
+    background: linear-gradient(180deg, rgba(14, 116, 144, 0.85), rgba(7, 85, 104, 0.85));
+    box-shadow: 0 0 36px rgba(34, 211, 238, 0.7), inset 0 0 16px rgba(34, 211, 238, 0.35);
+    transform: translateY(-1px);
+  }
+  @keyframes l-pulse {
+    0%, 100% { box-shadow: 0 0 24px rgba(34, 211, 238, 0.35), inset 0 0 12px rgba(34, 211, 238, 0.2); }
+    50%      { box-shadow: 0 0 40px rgba(34, 211, 238, 0.7),  inset 0 0 20px rgba(34, 211, 238, 0.35); }
+  }
+
+  /* Orbiting photons around the button */
+  #landing .l-orbit {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 220px; height: 80px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    animation: l-fade-in 0.5s ease-out 3.4s forwards;
+  }
+  #landing .l-photon {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 6px; height: 6px;
+    margin: -3px 0 0 -3px;
+    border-radius: 50%;
+    background: #67e8f9;
+    box-shadow: 0 0 8px #22d3ee, 0 0 16px rgba(34, 211, 238, 0.5);
+  }
+  #landing .l-photon.p1 { animation: l-orbit-1 4s linear infinite; animation-delay: 3.4s; }
+  #landing .l-photon.p2 { animation: l-orbit-2 4.6s linear infinite; animation-delay: 3.5s; background: #f0abfc; box-shadow: 0 0 8px #e879f9, 0 0 16px rgba(232, 121, 249, 0.5); }
+  #landing .l-photon.p3 { animation: l-orbit-3 5.2s linear infinite; animation-delay: 3.6s; }
+  @keyframes l-orbit-1 {
+    from { transform: rotate(0deg)   translateX(110px) translateY(0)    rotate(0deg); }
+    to   { transform: rotate(360deg) translateX(110px) translateY(0)    rotate(-360deg); }
+  }
+  @keyframes l-orbit-2 {
+    from { transform: rotate(120deg) translateX(110px) translateY(0)    rotate(-120deg); }
+    to   { transform: rotate(480deg) translateX(110px) translateY(0)    rotate(-480deg); }
+  }
+  @keyframes l-orbit-3 {
+    from { transform: rotate(240deg) translateX(110px) translateY(0)    rotate(-240deg); }
+    to   { transform: rotate(600deg) translateX(110px) translateY(0)    rotate(-600deg); }
+  }
+
+  #landing .l-skip {
+    position: absolute;
+    bottom: 32px; left: 50%; transform: translateX(-50%);
+    color: #475569;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    opacity: 0;
+    animation: l-fade-in 0.5s ease-out 3.8s forwards;
+    user-select: none;
+  }
+  #landing .l-skip kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    border: 1px solid #1f2a44;
+    border-radius: 3px;
+    background: #0a0f1c;
+    color: #94a3b8;
+    font-family: inherit;
+    font-size: 10px;
+    margin: 0 4px;
+  }
+
+  /* Decorative bench frame at edges of landing */
+  #landing .l-corner {
+    position: absolute;
+    width: 60px; height: 60px;
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    pointer-events: none;
+    opacity: 0;
+    animation: l-fade-in 0.6s ease-out 0.4s forwards;
+  }
+  #landing .l-corner.tl { top: 28px; left: 28px; border-right: none; border-bottom: none; }
+  #landing .l-corner.tr { top: 28px; right: 28px; border-left: none; border-bottom: none; }
+  #landing .l-corner.bl { bottom: 28px; left: 28px; border-right: none; border-top: none; }
+  #landing .l-corner.br { bottom: 28px; right: 28px; border-left: none; border-top: none; }
+</style>
+</head>
+<body>
+
+<!-- ========= LANDING / INTRO ========= -->
+<div id="landing">
+  <div class="grid-bg"></div>
+  <div class="l-corner tl"></div>
+  <div class="l-corner tr"></div>
+  <div class="l-corner bl"></div>
+  <div class="l-corner br"></div>
+  <div class="scan-line"></div>
+  <div class="l-content">
+    <div class="l-meta">// AN ELECTRO-OPTICS STRATEGY GAME</div>
+    <h1 class="l-title">
+      <span>T</span><span>H</span><span>O</span><span>U</span><span>G</span><span>H</span><span>T</span><span>R</span><span>O</span><span>N</span><span>S</span>
+    </h1>
+    <div class="l-tagline">CHESS, FOR LIGHT</div>
+    <div class="l-sub">Built on Maxwell&rsquo;s electromagnetic field theory.</div>
+    <div class="l-button-wrap">
+      <div class="l-orbit">
+        <div class="l-photon p1"></div>
+        <div class="l-photon p2"></div>
+        <div class="l-photon p3"></div>
+      </div>
+      <button class="l-button" id="landing-go">INITIALIZE BENCH</button>
+    </div>
+  </div>
+  <div class="l-skip">Click anywhere or press <kbd>Enter</kbd> to enter the lab</div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <span class="brand-logo"></span>
+      <span class="brand-name">THOUGHTRONS</span>
+      <span class="brand-tag">// AN ELECTRO-OPTICS STRATEGY GAME</span>
+    </div>
+    <div class="controls">
+      <button class="ctrl" id="btn-quickstart">Quickstart</button>
+      <button class="ctrl" id="btn-tutorial">Tutorial</button>
+      <button class="ctrl" id="btn-rules">Rules</button>
+      <button class="ctrl" id="btn-scoring">Scoring</button>
+      <button class="ctrl" id="btn-share" style="display:none">Share Link</button>
+      <button class="ctrl primary" id="btn-new">New Game</button>
+    </div>
+  </header>
+
+  <aside class="left">
+    <div class="panel-section">
+      <div class="panel-title">Mode</div>
+      <div class="stat-row">
+        <span class="stat-key">Opponent</span>
+        <select class="ctrl" id="opp-select">
+          <option value="ai">Computer</option>
+          <option value="human">2 Player (link)</option>
+        </select>
+      </div>
+      <div class="stat-row" style="display:block">
+        <div class="stat-key" style="margin-bottom:8px">Difficulty</div>
+        <div class="diff-pills" id="diff-pills">
+          <div class="diff-pill" data-d="EASY">EASY</div>
+          <div class="diff-pill active" data-d="MEDIUM">MEDIUM</div>
+          <div class="diff-pill" data-d="HARD">HARD</div>
+        </div>
+      </div>
+      <div class="toggle-row" id="guide-row">
+        <span class="tk">Movement guide</span>
+        <span class="toggle" id="guide-toggle"></span>
+      </div>
+      <div style="font-size:11px;color:#64748b;line-height:1.5;margin-top:4px">
+        When on, hover any piece to see its legal moves and how it works.
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">
+        Scoreboard
+        <span class="pt-hint" title="Click 'Scoring' for full breakdown">?</span>
+      </div>
+      <div class="stat-row"><span class="stat-key">Material lead</span><span class="stat-val" id="sb-material">0</span></div>
+      <div class="stat-row"><span class="stat-key">Captures</span><span class="stat-val" id="sb-caps">0</span></div>
+      <div class="stat-row"><span class="stat-key">Style points</span><span class="stat-val" id="sb-style">0</span></div>
+      <div class="stat-row"><span class="stat-key">Coherence index</span><span class="stat-val" id="sb-coh">100%</span></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Rating</div>
+      <div class="stat-row"><span class="stat-key">ELO</span><span class="stat-val" id="elo-val">1200</span></div>
+      <div class="stat-row"><span class="stat-key">Tier</span><span id="tier-val"></span></div>
+      <div class="stat-row"><span class="stat-key">Record</span><span class="stat-val" id="record-val">0W / 0L</span></div>
+      <div class="stat-row"><span class="stat-key">Last 10</span><span class="last10" id="last10"></span></div>
+      <div class="stat-row"><span class="stat-key">At stake</span>
+        <span class="stake-line">
+          <span class="win-amt" id="stake-win">+0</span>
+          <span class="vs">/</span>
+          <span class="loss-amt" id="stake-loss">-0</span>
+        </span>
+      </div>
+      <div class="stat-row"><span class="stat-key">Last change</span><span class="stat-val" id="elo-delta">—</span></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="bench-wrap">
+      <div class="bench-surface"></div>
+      <div class="mm-scale top" id="scale-top"></div>
+      <div class="mm-scale bottom" id="scale-bot"></div>
+      <div class="mm-scale left" id="scale-left"></div>
+      <div class="mm-scale right" id="scale-right"></div>
+      <div class="bench-tag"><b>TR-200B</b> · 200×200 mm</div>
+      <div class="board" id="board"></div>
+      <div class="guide-tooltip" id="tooltip"></div>
+      <div class="gameover-banner" id="gameover" style="display:none">
+        <h1 id="go-title">DECOHERENCE</h1>
+        <p id="go-text"></p>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right">
+    <div class="panel-section">
+      <div class="turn-indicator" id="turn-ind">
+        <span class="turn-dot p1"></span>
+        <span class="turn-text">Your move</span>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Active EO Rules</div>
+      <div id="active-rules" style="font-size: 12px; color: #94a3b8; line-height: 1.7;"></div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Captured by you</div>
+      <div class="captured-tray" id="cap-p1"></div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Captured by opponent</div>
+      <div class="captured-tray p2" id="cap-p2"></div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Move log</div>
+      <div class="history-list" id="history"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// THOUGHTRONS — ELECTRO-OPTICS STRATEGY GAME (v0.3)
+// Movement is now physics-driven (photons propagate; equipment
+// is bolted to the bench), with a movement-guide toggle, 3D
+// piece rendering, and correspondence-style 2P via shared link.
+// ============================================================
+
+const ROWS = 8, COLS = 8;
+const P1 = 1, P2 = 2;
+const TYPES = {
+  PHOTON: 'photon', MIRROR: 'mirror', LENS: 'lens',
+  SPLITTER: 'splitter', POLARIZER: 'polarizer', LASER: 'laser'
+};
+const PIECE_NAMES = {
+  photon: 'Photon', mirror: 'Plane Mirror', lens: 'Lens',
+  splitter: 'Beam Splitter', polarizer: 'Polarizer', laser: 'Laser Source'
+};
+// Updated values reflect new movement powers.
+const PIECE_VALUES = { photon: 2, mirror: 3, lens: 3, splitter: 4, polarizer: 7, laser: 1000 };
+
+// Physics-flavored descriptions for the movement guide tooltip.
+const PIECE_INFO = {
+  photon: {
+    tag: 'LIGHT BIT · range 1–3 · 8 directions',
+    desc: 'A bit of light. Propagates in any straight line up to 3 squares. The fastest mover on the bench. Captures by direct hit.',
+    physics: 'Photons travel at c in straight lines until they interact. In Thoughtrons they are the only "active" mover — equipment is bolted down.'
+  },
+  mirror: {
+    tag: 'PLANE MIRROR · range 1–2 · 8 directions',
+    desc: 'A flat reflective surface mounted on a post. Slow to reposition (1–2 squares). Acts as a wall — your photons can\'t pass through your own mirror, but neither can the opponent.',
+    physics: 'A real plane mirror reflects light at the same angle of incidence. In v2 mirrors will reflect adjacent photon paths.'
+  },
+  lens: {
+    tag: 'LENS · range 1–2 · 8 directions',
+    desc: 'A glass element that focuses or diverges light. Slow to reposition. Use it to anchor a position; in v2 it will boost an adjacent friendly photon\'s range.',
+    physics: 'A converging lens bends parallel rays toward a focal point. The "F" stamped on real lab lenses is the focal length in mm.'
+  },
+  splitter: {
+    tag: 'BEAM SPLITTER · 1 sq OR L-jump · captures are quantum',
+    desc: 'A 50:50 cube. Moves 1 square in any direction OR jumps in an L-shape (it lives at the junction of two paths). Any capture involving it is a 50/50 coin flip.',
+    physics: 'A real 50:50 BS routes a single photon to either output port with equal probability. Tactical use is genuine quantum gambling.'
+  },
+  polarizer: {
+    tag: 'POLARIZER · range 1–3 · 8 directions',
+    desc: 'A filter that passes only one polarization axis. The strongest equipment piece. Capture probability across mismatched axes is cos²(Δθ) — Malus\'s law.',
+    physics: 'Two crossed polarizers transmit no light. A failed capture across a polarizer absorbs the attacker — it doesn\'t bounce back.'
+  },
+  laser: {
+    tag: 'LASER SOURCE · range 1 · 8 directions',
+    desc: 'The coherent source. Slow (1 square per turn), and the piece you must protect. If it gets captured, the game ends.',
+    physics: 'A laser cavity decoheres the moment its mirrors are destroyed. There is no "check" warning — leave it exposed and you lose.'
+  }
+};
+
+const DIFFICULTY = {
+  EASY:   { polarization: false, coherence: false, splitterRandomness: false, aiDepth: 0, label: 'Easy',   aiRating: 800 },
+  MEDIUM: { polarization: true,  coherence: false, splitterRandomness: true,  aiDepth: 1, label: 'Medium', aiRating: 1300 },
+  HARD:   { polarization: true,  coherence: true,  splitterRandomness: true,  aiDepth: 2, label: 'Hard',   aiRating: 1700 }
+};
+
+const POLAR_ANGLES = [0, 45, 90];
+const FILE_LETTERS = ['a','b','c','d','e','f','g','h'];
+const ALL_8_DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+
+const TIERS = [
+  { min: 0,    max: 1199, name: 'TRAINEE',     cls: 'tier-trainee' },
+  { min: 1200, max: 1399, name: 'APPRENTICE',  cls: 'tier-apprentice' },
+  { min: 1400, max: 1599, name: 'ADJUNCT',     cls: 'tier-adjunct' },
+  { min: 1600, max: 1799, name: 'RESEARCHER',  cls: 'tier-researcher' },
+  { min: 1800, max: 1999, name: 'SENIOR',      cls: 'tier-senior' },
+  { min: 2000, max: 9999, name: 'PRINCIPAL',   cls: 'tier-principal' }
+];
+
+// ---------- STATE ----------
+let state = {
+  board: [],
+  turn: P1,
+  selected: null,
+  legalMovesCache: [],
+  difficulty: 'MEDIUM',
+  vsAI: true,
+  gameOver: null,
+  history: [],
+  captured: { 1: [], 2: [] },
+  lastMove: null,
+  busy: false,
+  gameStyleP1: 0,
+  gameStyleP2: 0,
+  showGuide: false
+};
+
+// ---------- PERSISTED STATS ----------
+function loadStats() {
+  try {
+    const s = JSON.parse(localStorage.getItem('thoughtrons-stats') || '{}');
+    return {
+      elo: s.elo ?? 1200, wins: s.wins ?? 0, losses: s.losses ?? 0,
+      lastDelta: s.lastDelta ?? null,
+      lifetimeStyle: s.lifetimeStyle ?? 0,
+      lifetimeCaptures: s.lifetimeCaptures ?? 0,
+      last10: s.last10 ?? []
+    };
+  } catch {
+    return { elo: 1200, wins: 0, losses: 0, lastDelta: null, lifetimeStyle: 0, lifetimeCaptures: 0, last10: [] };
+  }
+}
+function saveStats(s) { try { localStorage.setItem('thoughtrons-stats', JSON.stringify(s)); } catch {} }
+function tierFor(elo) { return TIERS.find(t => elo >= t.min && elo <= t.max) || TIERS[0]; }
+function expectedScore(eloA, eloB) { return 1 / (1 + Math.pow(10, (eloB - eloA) / 400)); }
+function stakeFor(difficulty) {
+  const stats = loadStats();
+  const aiR = DIFFICULTY[difficulty].aiRating;
+  const E = expectedScore(stats.elo, aiR);
+  return { winDelta: Math.round(32 * (1 - E)), lossDelta: Math.round(32 * (0 - E)) };
+}
+function applyEloOutcome(playerWon) {
+  const stats = loadStats();
+  const aiR = DIFFICULTY[state.difficulty].aiRating;
+  const E = expectedScore(stats.elo, aiR);
+  const score = playerWon ? 1 : 0;
+  const delta = Math.round(32 * (score - E));
+  stats.elo = Math.max(0, stats.elo + delta);
+  stats.lastDelta = delta;
+  if (playerWon) stats.wins++; else stats.losses++;
+  stats.last10 = (stats.last10 || []).concat([playerWon ? 'W' : 'L']).slice(-10);
+  saveStats(stats);
+  return delta;
+}
+function commitGameStats() {
+  const stats = loadStats();
+  stats.lifetimeCaptures = (stats.lifetimeCaptures || 0) + state.captured[P1].length;
+  stats.lifetimeStyle    = (stats.lifetimeStyle || 0) + state.gameStyleP1;
+  saveStats(stats);
+}
+
+// ---------- BOARD ----------
+// Compass directions for laser facing & beam propagation.
+// Vectors are [dRow, dCol]: N goes "up the rows" so dr=-1.
+const DIR_VEC = { N: [-1, 0], E: [0, 1], S: [1, 0], W: [0, -1] };
+// Mirror reflection rules: how a beam direction changes when it hits a mirror
+// of given orientation. '/' reflects N↔E and S↔W. '\\' reflects N↔W and S↔E.
+const MIRROR_REFLECT = {
+  '/' : { N: 'E', E: 'N', S: 'W', W: 'S' },
+  '\\': { N: 'W', W: 'N', S: 'E', E: 'S' }
+};
+const NEXT_FACING = { N: 'E', E: 'S', S: 'W', W: 'N' };
+
+function makePiece(type, owner) {
+  const p = {
+    type, owner,
+    polarization: type === TYPES.POLARIZER ? 0 : POLAR_ANGLES[Math.floor(Math.random()*POLAR_ANGLES.length)],
+    coherence: 100,
+    id: Math.random().toString(36).slice(2)
+  };
+  // Laser carries a facing direction (toward the enemy by default).
+  if (type === TYPES.LASER) p.facing = (owner === P1) ? 'N' : 'S';
+  // Mirror carries an orientation: '/' or '\\'. Default '/' for both sides;
+  // they'll rotate during play.
+  if (type === TYPES.MIRROR) p.orientation = '/';
+  return p;
+}
+function initBoard() {
+  const board = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+  const backRank = [TYPES.MIRROR, TYPES.SPLITTER, TYPES.LENS, TYPES.POLARIZER,
+                    TYPES.LASER, TYPES.LENS, TYPES.SPLITTER, TYPES.MIRROR];
+  for (let c = 0; c < COLS; c++) {
+    board[0][c] = makePiece(backRank[c], P2);
+    board[1][c] = makePiece(TYPES.PHOTON, P2);
+    board[6][c] = makePiece(TYPES.PHOTON, P1);
+    board[7][c] = makePiece(backRank[c], P1);
+  }
+  return board;
+}
+function newGame(loadedState) {
+  if (loadedState) {
+    state.board = loadedState.board;
+    state.turn = loadedState.turn;
+    state.gameStyleP1 = loadedState.p1sp ?? 0;
+    state.gameStyleP2 = loadedState.p2sp ?? 0;
+    state.difficulty = loadedState.difficulty;
+    state.vsAI = loadedState.vsAI;
+  } else {
+    state.board = initBoard();
+    state.turn = P1;
+    state.gameStyleP1 = 0;
+    state.gameStyleP2 = 0;
+  }
+  state.selected = null;
+  state.legalMovesCache = [];
+  state.gameOver = null;
+  state.history = [];
+  state.captured = { 1: [], 2: [] };
+  state.lastMove = null;
+  state.busy = false;
+  document.getElementById('gameover').style.display = 'none';
+  syncOpponentControls();
+  render();
+  updateShareLinkUrl();
+}
+
+// ---------- MOVE GENERATION ----------
+// Movement is now physics-driven, not chess. Photons propagate; equipment
+// is bolted to the bench (slow). All pieces use 8-direction movement so
+// the chess-style "rook is orthogonal, bishop is diagonal" feel is gone.
+function inBounds(r, c) { return r >= 0 && r < ROWS && c >= 0 && c < COLS; }
+
+function rangeMoves(row, col, dirs, maxRange, board, piece, moves) {
+  // Photons can capture by movement (a colliding photon physically interacts);
+  // equipment cannot — a mirror bumping a polarizer doesn't "take" it. Equipment
+  // captures happen via beams (see fireLaser). This makes equipment positional,
+  // not chess-y.
+  const canWalkCapture = piece.type === TYPES.PHOTON;
+  for (const [dr, dc] of dirs) {
+    for (let step = 1; step <= maxRange; step++) {
+      const nr = row + dr*step, nc = col + dc*step;
+      if (!inBounds(nr, nc)) break;
+      if (!board[nr][nc]) {
+        moves.push({row: nr, col: nc, capture: false});
+      } else {
+        if (canWalkCapture && board[nr][nc].owner !== piece.owner) {
+          moves.push({row: nr, col: nc, capture: true});
+        }
+        break;
+      }
+    }
+  }
+}
+
+function legalMovesFor(row, col, board) {
+  const piece = board[row][col];
+  if (!piece) return [];
+  const moves = [];
+
+  switch (piece.type) {
+    case TYPES.PHOTON:
+      // Photons propagate: 1–3 squares, any of 8 directions, straight line.
+      rangeMoves(row, col, ALL_8_DIRS, 3, board, piece, moves);
+      break;
+    case TYPES.MIRROR:
+    case TYPES.LENS:
+      // Slow lab equipment: 1–2 squares, any direction.
+      rangeMoves(row, col, ALL_8_DIRS, 2, board, piece, moves);
+      break;
+    case TYPES.POLARIZER:
+      // The strongest equipment — 1–3 squares, any direction.
+      rangeMoves(row, col, ALL_8_DIRS, 3, board, piece, moves);
+      break;
+    case TYPES.SPLITTER: {
+      // Beam splitter sits at the junction of two paths: it can take
+      // an L-shaped jump OR step 1 square in any direction.
+      // Equipment piece — can't walk-capture (only beams capture).
+      const lShapes = [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
+      for (const [dr, dc] of lShapes) {
+        const nr = row + dr, nc = col + dc;
+        if (inBounds(nr, nc) && !board[nr][nc]) {
+          moves.push({row: nr, col: nc, capture: false});
+        }
+      }
+      for (const [dr, dc] of ALL_8_DIRS) {
+        const nr = row + dr, nc = col + dc;
+        if (inBounds(nr, nc) && !board[nr][nc]) {
+          if (!moves.some(m => m.row === nr && m.col === nc)) {
+            moves.push({row: nr, col: nc, capture: false});
+          }
+        }
+      }
+      break;
+    }
+    case TYPES.LASER:
+      // Slow & precious — 1 square, any direction. Cannot walk-capture
+      // (the laser source is too important to expose via attack moves).
+      for (const [dr, dc] of ALL_8_DIRS) {
+        const nr = row + dr, nc = col + dc;
+        if (inBounds(nr, nc) && !board[nr][nc]) {
+          moves.push({row: nr, col: nc, capture: false});
+        }
+      }
+      break;
+  }
+
+  if (DIFFICULTY[state.difficulty].coherence && piece.coherence < 25) {
+    return moves.filter(m => !m.capture);
+  }
+  return moves;
+}
+
+function allLegalMoves(player, board) {
+  const moves = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    if (board[r][c] && board[r][c].owner === player) {
+      for (const m of legalMovesFor(r, c, board)) {
+        moves.push({ from: {row: r, col: c}, to: m });
+      }
+    }
+  }
+  return moves;
+}
+
+// ---------- CAPTURE ----------
+function captureCheck(attacker, target) {
+  const cfg = DIFFICULTY[state.difficulty];
+  if (!cfg.polarization) return { success: true, reason: 'classical', probability: 1 };
+  if (cfg.splitterRandomness && (attacker.type === TYPES.SPLITTER || target.type === TYPES.SPLITTER)) {
+    return { success: Math.random() < 0.5, reason: 'quantum', probability: 0.5 };
+  }
+  let delta = Math.abs(attacker.polarization - target.polarization) % 180;
+  if (delta > 90) delta = 180 - delta;
+  const probability = Math.cos(delta * Math.PI / 180) ** 2;
+  return { success: Math.random() < probability, reason: 'malus', probability, angle: delta };
+}
+
+function computeStylePoints(attacker, target, captureResult) {
+  let pts = 0;
+  if (captureResult?.reason === 'quantum') pts += 5;
+  if (attacker.type === TYPES.PHOTON && PIECE_VALUES[target.type] >= 3 && target.type !== TYPES.LASER) pts += 4;
+  if (attacker.type === TYPES.PHOTON && target.type === TYPES.POLARIZER) pts += 10;
+  if (captureResult?.reason === 'malus' && Math.round(captureResult.angle) === 45 && captureResult.success) pts += 3;
+  if (target.type === TYPES.LASER) pts += 25;
+  return pts;
+}
+
+// ---------- MOVE EXECUTION ----------
+function applyMove(from, to) {
+  const piece = state.board[from.row][from.col];
+  const target = state.board[to.row][to.col];
+  let captureResult = null;
+  let stylePts = 0;
+
+  if (target) {
+    captureResult = captureCheck(piece, target);
+    if (!captureResult.success) {
+      state.captured[target.owner].push(piece);
+      state.board[from.row][from.col] = null;
+      const reason = captureResult.reason === 'quantum'
+        ? 'Quantum collapse — attacker absorbed at the splitter.'
+        : `Polarization mismatch (Δ=${Math.round(captureResult.angle)}°, p=${(captureResult.probability*100).toFixed(0)}%). Attacker absorbed.`;
+      showToast(reason);
+      if (target.type === TYPES.POLARIZER) {
+        if (target.owner === P1) state.gameStyleP1 += 2; else state.gameStyleP2 += 2;
+      }
+      state.lastMove = { from, to };
+      finalizeTurn(piece, captureResult, target, 0);
+      return { absorbed: true };
+    }
+    state.captured[piece.owner].push(target);
+    stylePts = computeStylePoints(piece, target, captureResult);
+    if (piece.owner === P1) state.gameStyleP1 += stylePts;
+    else state.gameStyleP2 += stylePts;
+    if (target.type === TYPES.LASER) state.gameOver = piece.owner;
+  }
+
+  state.board[to.row][to.col] = piece;
+  state.board[from.row][from.col] = null;
+
+  if (DIFFICULTY[state.difficulty].coherence) {
+    const dist = Math.max(Math.abs(to.row - from.row), Math.abs(to.col - from.col));
+    piece.coherence = Math.max(0, piece.coherence - dist * 5);
+  }
+
+  state.lastMove = { from, to };
+  finalizeTurn(piece, captureResult, target, stylePts);
+  return { success: true, capture: !!target, captureResult, stylePts };
+}
+
+function finalizeTurn(movedPiece, captureResult, target, stylePts) {
+  const fromCoord = coordStr(state.lastMove.from);
+  const toCoord = coordStr(state.lastMove.to);
+  const sym = pieceShort(movedPiece.type);
+  let note = `${sym} ${fromCoord}→${toCoord}`;
+  if (target && captureResult?.success) note += ` ×${pieceShort(target.type)}`;
+  if (target && captureResult && !captureResult.success) note += ` ✗`;
+  if (captureResult?.reason === 'quantum') note += ' [BS]';
+  if (stylePts > 0) note += ` +${stylePts}sp`;
+  state.history.push({ owner: movedPiece.owner, text: note });
+
+  state.turn = state.turn === P1 ? P2 : P1;
+
+  if (DIFFICULTY[state.difficulty].coherence) {
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const p = state.board[r][c];
+      if (p && p !== movedPiece && p.coherence < 100) {
+        p.coherence = Math.min(100, p.coherence + 4);
+      }
+    }
+  }
+
+  updateShareLinkUrl();
+  if (state.gameOver) handleGameOver();
+}
+
+function coordStr({row, col}) { return FILE_LETTERS[col] + (8 - row); }
+function pieceShort(t) {
+  return { photon: 'P', mirror: 'M', lens: 'L', splitter: 'S', polarizer: 'Q', laser: '*' }[t];
+}
+
+// ---------- ROTATION ACTIONS ----------
+// Some pieces can be rotated in place — that costs your whole turn (no move).
+// Laser cycles facing 90° clockwise: N → E → S → W → N.
+// Mirror toggles orientation: '/' ↔ '\\'.
+function canRotate(piece) {
+  return piece && (piece.type === TYPES.LASER || piece.type === TYPES.MIRROR);
+}
+function applyRotation(row, col) {
+  const piece = state.board[row][col];
+  if (!canRotate(piece)) return null;
+  if (piece.type === TYPES.LASER) {
+    piece.facing = NEXT_FACING[piece.facing];
+  } else if (piece.type === TYPES.MIRROR) {
+    piece.orientation = piece.orientation === '/' ? '\\' : '/';
+  }
+  state.lastMove = { from: { row, col }, to: { row, col } };
+  // Log the rotation
+  const sym = pieceShort(piece.type);
+  const note = piece.type === TYPES.LASER
+    ? `${sym} ${coordStr({row, col})} ↻${piece.facing}`
+    : `${sym} ${coordStr({row, col})} ${piece.orientation}`;
+  state.history.push({ owner: piece.owner, text: note });
+  state.turn = state.turn === P1 ? P2 : P1;
+  return { rotation: true, piece };
+}
+
+// ---------- BEAM TRACING (the strategic core of v0.4) ----------
+// Trace a beam from `start` (the laser) in `direction`, propagating through
+// the bench, reflecting off mirrors, splitting at beam splitters, filtering
+// at polarizers. Returns:
+//   - segments: a list of beam path segments (for animation)
+//   - captures: list of enemy pieces captured ({row, col, piece})
+//   - won: true if beam hit the enemy laser
+function traceBeam(startRow, startCol, direction, owner, board) {
+  const segments = [];
+  const captures = [];
+  let won = false;
+
+  // BFS-style: each "ray" has position, direction, polarization.
+  // Queue handles splitters generating multiple rays.
+  const queue = [{ r: startRow, c: startCol, dir: direction, pol: 0, hops: 0 }];
+  const visited = new Set();
+
+  while (queue.length) {
+    const ray = queue.shift();
+    if (ray.hops > 32) continue; // safety
+    const visKey = `${ray.r},${ray.c},${ray.dir}`;
+    if (visited.has(visKey)) continue;
+    visited.add(visKey);
+
+    const [dr, dc] = DIR_VEC[ray.dir];
+    let r = ray.r, c = ray.c;
+    const segStart = { r, c };
+    let pol = ray.pol;
+
+    // Step until we hit a piece or leave the bench.
+    while (true) {
+      r += dr; c += dc;
+      if (!inBounds(r, c)) {
+        segments.push({ from: segStart, to: { r: r - dr, c: c - dc }, owner });
+        break; // beam exits the bench
+      }
+      const piece = board[r][c];
+      if (!piece) continue;
+
+      // Hit something. Record the segment up to and including this square.
+      segments.push({ from: segStart, to: { r, c }, owner });
+
+      if (piece.owner === owner) {
+        // Friendly piece — can the beam interact?
+        if (piece.type === TYPES.MIRROR) {
+          const newDir = MIRROR_REFLECT[piece.orientation][ray.dir];
+          queue.push({ r, c, dir: newDir, pol, hops: ray.hops + 1 });
+        } else if (piece.type === TYPES.SPLITTER) {
+          // Splitter splits into 2 perpendicular paths.
+          // Rule: incoming continues + reflects 90° (one fixed direction).
+          const perp = (ray.dir === 'N' || ray.dir === 'S') ? 'E' : 'N';
+          queue.push({ r, c, dir: ray.dir, pol, hops: ray.hops + 1 }); // through
+          queue.push({ r, c, dir: perp, pol, hops: ray.hops + 1 });    // perpendicular
+        } else if (piece.type === TYPES.LENS) {
+          // Lens: pass-through (in v0.4 lenses are positional only)
+          queue.push({ r, c, dir: ray.dir, pol, hops: ray.hops + 1 });
+        } else if (piece.type === TYPES.POLARIZER) {
+          // Polarizer rotates beam polarization to its own axis (Malus loss
+          // simulated downstream, but for friendly polarizers, treat as a
+          // pass-through that re-polarizes the beam).
+          queue.push({ r, c, dir: ray.dir, pol: piece.polarization, hops: ray.hops + 1 });
+        } else {
+          // Friendly photon or own laser: beam absorbed, stop.
+        }
+        break;
+      } else {
+        // Enemy piece — capture (or get filtered).
+        if (piece.type === TYPES.LASER) {
+          captures.push({ row: r, col: c, piece });
+          won = true;
+          break;
+        }
+        if (piece.type === TYPES.POLARIZER && DIFFICULTY[state.difficulty].polarization) {
+          // Apply Malus's law: probability of passing through the polarizer.
+          let delta = Math.abs(pol - piece.polarization) % 180;
+          if (delta > 90) delta = 180 - delta;
+          const prob = Math.cos(delta * Math.PI / 180) ** 2;
+          if (Math.random() < prob) {
+            // Beam passes through; capture this polarizer too.
+            captures.push({ row: r, col: c, piece });
+            queue.push({ r, c, dir: ray.dir, pol: piece.polarization, hops: ray.hops + 1 });
+          }
+          // If blocked, the polarizer survives and the beam is absorbed.
+          break;
+        }
+        // Standard enemy capture
+        captures.push({ row: r, col: c, piece });
+        break;
+      }
+    }
+  }
+  return { segments, captures, won };
+}
+
+function findLaser(owner) {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const p = state.board[r][c];
+    if (p && p.type === TYPES.LASER && p.owner === owner) return { row: r, col: c, piece: p };
+  }
+  return null;
+}
+
+async function fireLaser(owner) {
+  const laser = findLaser(owner);
+  if (!laser) return;
+  const result = traceBeam(laser.row, laser.col, laser.piece.facing, owner, state.board);
+
+  // Animate every segment of the beam.
+  for (const seg of result.segments) {
+    drawFireBeam(seg.from, seg.to, owner);
+  }
+  await new Promise(res => setTimeout(res, 700));
+
+  // Apply captures. Order doesn't matter much; beam is instantaneous.
+  let capturedNotes = [];
+  for (const cap of result.captures) {
+    state.captured[owner].push(cap.piece);
+    state.board[cap.row][cap.col] = null;
+    capturedNotes.push(coordStr({row: cap.row, col: cap.col}));
+    // Style points: beam capturing a high-value piece is interesting.
+    const pts = (cap.piece.type === TYPES.LASER) ? 25
+              : (PIECE_VALUES[cap.piece.type] >= 7) ? 8
+              : (PIECE_VALUES[cap.piece.type] >= 3) ? 3
+              : 1;
+    if (owner === P1) state.gameStyleP1 += pts; else state.gameStyleP2 += pts;
+  }
+  if (capturedNotes.length) {
+    state.history.push({ owner, text: `▸ beam ×${capturedNotes.join(',')}` });
+  }
+  if (result.won) {
+    state.gameOver = owner;
+    handleGameOver();
+  }
+}
+
+function drawFireBeam(from, to, owner) {
+  const board = document.getElementById('board');
+  const rect = board.getBoundingClientRect();
+  const sqW = rect.width / COLS, sqH = rect.height / ROWS;
+  const cx1 = from.c * sqW + sqW/2, cy1 = from.r * sqH + sqH/2;
+  const cx2 = to.c   * sqW + sqW/2, cy2 = to.r   * sqH + sqH/2;
+  const dx = cx2 - cx1, dy = cy2 - cy1;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  const beam = document.createElement('div');
+  beam.className = 'fire-beam' + (owner === P2 ? ' p2' : '');
+  beam.style.left = cx1 + 'px';
+  beam.style.top  = cy1 + 'px';
+  beam.style.width = dist + 'px';
+  beam.style.transform = `rotate(${angle}deg)`;
+  board.appendChild(beam);
+  setTimeout(() => beam.remove(), 900);
+}
+
+// ---------- AI ----------
+function aiMove() {
+  const moves = allLegalMoves(state.turn, state.board);
+  if (moves.length === 0) return null;
+  const cfg = DIFFICULTY[state.difficulty];
+  if (cfg.aiDepth === 0) {
+    const captures = moves.filter(m => m.to.capture);
+    if (captures.length && Math.random() < 0.3) return captures[Math.floor(Math.random() * captures.length)];
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+  let bestScore = -Infinity, best = [];
+  for (const m of moves) {
+    const undo = simulate(m);
+    const sc = -negamax(cfg.aiDepth - 1, -Infinity, Infinity, state.turn === P1 ? P2 : P1);
+    undo();
+    if (sc > bestScore + 0.001) { bestScore = sc; best = [m]; }
+    else if (Math.abs(sc - bestScore) < 0.001) best.push(m);
+  }
+  return best[Math.floor(Math.random() * best.length)];
+}
+function negamax(depth, alpha, beta, color) {
+  if (depth === 0 || state.gameOver) return evalBoard(color);
+  const moves = allLegalMoves(color, state.board);
+  if (moves.length === 0) return evalBoard(color);
+  let bestScore = -Infinity;
+  for (const m of moves) {
+    const undo = simulate(m);
+    const sc = -negamax(depth - 1, -beta, -alpha, color === P1 ? P2 : P1);
+    undo();
+    if (sc > bestScore) bestScore = sc;
+    if (bestScore > alpha) alpha = bestScore;
+    if (alpha >= beta) break;
+  }
+  return bestScore;
+}
+function simulate(move) {
+  const from = move.from, to = move.to;
+  const piece = state.board[from.row][from.col];
+  const target = state.board[to.row][to.col];
+  state.board[from.row][from.col] = null;
+  state.board[to.row][to.col] = piece;
+  const wasOver = state.gameOver;
+  if (target?.type === TYPES.LASER) state.gameOver = piece.owner;
+  return () => {
+    state.board[from.row][from.col] = piece;
+    state.board[to.row][to.col] = target;
+    state.gameOver = wasOver;
+  };
+}
+function evalBoard(forPlayer) {
+  let score = 0;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const p = state.board[r][c]; if (!p) continue;
+    score += p.owner === forPlayer ? PIECE_VALUES[p.type] : -PIECE_VALUES[p.type];
+  }
+  return score;
+}
+
+// ---------- COMPUTED SCORE ----------
+function computeMaterialLead(forPlayer) {
+  let mine = 0, theirs = 0;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const p = state.board[r][c]; if (!p) continue;
+    const v = p.type === TYPES.LASER ? 0 : PIECE_VALUES[p.type];
+    if (p.owner === forPlayer) mine += v; else theirs += v;
+  }
+  return mine - theirs;
+}
+function computeCoherenceIndex(forPlayer) {
+  let sum = 0, n = 0;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const p = state.board[r][c]; if (!p || p.owner !== forPlayer) continue;
+    sum += p.coherence; n++;
+  }
+  return n ? Math.round(sum / n) : 0;
+}
+
+// ---------- RENDERING ----------
+function render() {
+  renderBoard();
+  renderTurn();
+  renderCaptured();
+  renderHistory();
+  renderActiveRules();
+  renderScoreboard();
+  renderRating();
+  renderScales();
+  renderGuideToggle();
+}
+function renderScales() {
+  const ranges = ['0','25','50','75','100','125','150','175','200'];
+  const top = document.getElementById('scale-top'), bot = document.getElementById('scale-bot');
+  const lf = document.getElementById('scale-left'), rt = document.getElementById('scale-right');
+  if (top.children.length) return;
+  for (const v of ranges) {
+    const a = document.createElement('span'); a.textContent = v; top.appendChild(a);
+    const b = document.createElement('span'); b.textContent = v; bot.appendChild(b);
+  }
+  for (const v of ranges.slice().reverse()) {
+    const a = document.createElement('span'); a.textContent = v; lf.appendChild(a);
+    const b = document.createElement('span'); b.textContent = v; rt.appendChild(b);
+  }
+}
+function renderGuideToggle() {
+  document.getElementById('guide-toggle').classList.toggle('on', state.showGuide);
+}
+
+function renderBoard() {
+  const b = document.getElementById('board');
+  b.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const sq = document.createElement('div');
+    sq.className = 'station';
+    sq.dataset.row = r; sq.dataset.col = c;
+
+    if (state.lastMove && (
+      (state.lastMove.from.row === r && state.lastMove.from.col === c) ||
+      (state.lastMove.to.row === r && state.lastMove.to.col === c)
+    )) sq.classList.add('last-move');
+
+    if (state.selected && state.selected.row === r && state.selected.col === c)
+      sq.classList.add('selected');
+
+    const move = state.legalMovesCache.find(m => m.row === r && m.col === c);
+    if (move) sq.classList.add(move.capture ? 'move-capture' : 'move-target');
+
+    const piece = state.board[r][c];
+    if (piece) {
+      const pEl = document.createElement('div');
+      pEl.className = 'piece p' + piece.owner;
+      pEl.innerHTML = pieceSVG(piece.type, piece);
+      // Laser: render a facing arrow on the outside of the piece.
+      if (piece.type === TYPES.LASER && piece.facing) {
+        const arr = document.createElement('div');
+        arr.className = 'facing-arrow ' + piece.facing;
+        arr.innerHTML = '<svg viewBox="0 0 16 16"><path d="M 8 1 L 14 13 L 8 10 L 2 13 Z" fill="currentColor"/></svg>';
+        pEl.appendChild(arr);
+      }
+      if (DIFFICULTY[state.difficulty].polarization && piece.type !== TYPES.LASER && piece.type !== TYPES.SPLITTER && piece.type !== TYPES.MIRROR) {
+        const tick = document.createElement('div');
+        tick.className = 'pol-tick';
+        tick.style.transform = `rotate(${piece.polarization}deg)`;
+        pEl.appendChild(tick);
+      }
+      if (DIFFICULTY[state.difficulty].coherence && piece.coherence < 100) {
+        const bar = document.createElement('div');
+        bar.className = 'coh-bar';
+        const fill = document.createElement('div');
+        fill.className = 'coh-fill';
+        fill.style.width = piece.coherence + '%';
+        bar.appendChild(fill);
+        pEl.appendChild(bar);
+      }
+      sq.appendChild(pEl);
+
+      // If selected and rotatable, show a rotate button overlay.
+      if (state.selected && state.selected.row === r && state.selected.col === c && canRotate(piece)) {
+        const rb = document.createElement('button');
+        rb.className = 'rotate-btn';
+        rb.innerHTML = '&#x21bb;'; // clockwise rotate icon
+        rb.title = piece.type === TYPES.LASER
+          ? `Rotate laser facing → ${NEXT_FACING[piece.facing]}`
+          : `Flip mirror to ${piece.orientation === '/' ? '\\\\' : '/'}`;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:absolute; bottom:-22%; left:50%; transform:translateX(-50%); pointer-events:auto;';
+        wrap.appendChild(rb);
+        rb.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (state.busy || state.gameOver) return;
+          if (state.vsAI && state.turn !== P1) return;
+          doPlayerRotate(r, c);
+        });
+        sq.appendChild(wrap);
+      }
+    }
+
+    sq.addEventListener('click', () => onSquareClick(r, c));
+    if (move) {
+      sq.addEventListener('mouseenter', () => showBeamPreview(state.selected, {row:r,col:c}));
+      sq.addEventListener('mouseleave', clearBeamPreview);
+    }
+    sq.addEventListener('mouseenter', () => onStationHover(r, c, sq));
+    sq.addEventListener('mouseleave', () => onStationLeave(sq));
+    b.appendChild(sq);
+  }
+}
+
+// ---------- 3D-LOOKING PIECE SVGs ----------
+// Each piece is drawn so it visually communicates what the real lab
+// element looks like: a base, a post, and the optical element on top.
+function pieceSVG(type, piece) {
+  switch (type) {
+    case TYPES.PHOTON:
+      return `<svg viewBox="0 0 40 40">
+        <defs>
+          <radialGradient id="pPhoton" cx="35%" cy="30%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+            <stop offset="20%" stop-color="currentColor" stop-opacity="0.95"/>
+            <stop offset="60%" stop-color="currentColor" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="20" cy="20" r="11" fill="url(#pPhoton)"/>
+        <circle cx="20" cy="20" r="4" fill="#ffffff" opacity="0.95"/>
+        <circle cx="14" cy="16" r="1.6" fill="currentColor" opacity="0.45"/>
+        <circle cx="11" cy="18.5" r="1" fill="currentColor" opacity="0.25"/>
+      </svg>`;
+    case TYPES.MIRROR: {
+      // The mirror's orientation ('/' or '\\') is rendered as the visible
+      // reflective diagonal — players must read it to predict reflections.
+      const orient = piece?.orientation || '/';
+      const diag = orient === '/'
+        ? `<line x1="6" y1="34" x2="34" y2="6" stroke="#ffffff" stroke-width="3" opacity="0.95"/>
+           <line x1="6" y1="34" x2="34" y2="6" stroke="currentColor" stroke-width="1.4" opacity="0.7"/>`
+        : `<line x1="6" y1="6" x2="34" y2="34" stroke="#ffffff" stroke-width="3" opacity="0.95"/>
+           <line x1="6" y1="6" x2="34" y2="34" stroke="currentColor" stroke-width="1.4" opacity="0.7"/>`;
+      return `<svg viewBox="0 0 40 40">
+        <ellipse cx="20" cy="36" rx="9" ry="2" fill="currentColor" opacity="0.35"/>
+        <rect x="6" y="6" width="28" height="28" rx="2" fill="currentColor" fill-opacity="0.08" stroke="currentColor" stroke-width="1.1" opacity="0.6"/>
+        ${diag}
+      </svg>`;
+    }
+    case TYPES.LENS:
+      return `<svg viewBox="0 0 40 40">
+        <defs>
+          <radialGradient id="pLens" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+            <stop offset="60%" stop-color="currentColor" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0.1"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="20" cy="35" rx="7" ry="2" fill="currentColor" opacity="0.35"/>
+        <rect x="19" y="26" width="2" height="9" fill="currentColor" opacity="0.45"/>
+        <path d="M 13 8 Q 20 5, 27 8 Q 30 18, 27 28 Q 20 31, 13 28 Q 10 18, 13 8 Z"
+              fill="url(#pLens)" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="20" y1="6" x2="20" y2="30" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+        <ellipse cx="16" cy="13" rx="1.6" ry="3.4" fill="#ffffff" opacity="0.5"/>
+        <ellipse cx="24" cy="22" rx="1" ry="2" fill="#ffffff" opacity="0.25"/>
+      </svg>`;
+    case TYPES.SPLITTER:
+      return `<svg viewBox="0 0 40 40">
+        <ellipse cx="20" cy="36" rx="8" ry="2" fill="currentColor" opacity="0.3"/>
+        <polygon points="10,12 20,8 30,12 20,16" fill="currentColor" opacity="0.45"/>
+        <polygon points="10,12 20,16 20,30 10,26" fill="currentColor" opacity="0.22" stroke="currentColor" stroke-width="1"/>
+        <polygon points="20,16 30,12 30,26 20,30" fill="currentColor" opacity="0.32" stroke="currentColor" stroke-width="1"/>
+        <line x1="10" y1="26" x2="30" y2="12" stroke="currentColor" stroke-width="1.5" opacity="0.85"/>
+        <line x1="10" y1="12" x2="30" y2="26" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
+        <line x1="10" y1="12" x2="20" y2="8" stroke="#ffffff" stroke-width="0.6" opacity="0.6"/>
+        <line x1="20" y1="8" x2="30" y2="12" stroke="#ffffff" stroke-width="0.4" opacity="0.4"/>
+      </svg>`;
+    case TYPES.POLARIZER:
+      return `<svg viewBox="0 0 40 40">
+        <defs>
+          <linearGradient id="pPolDisc" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="20" cy="35" rx="7" ry="2" fill="currentColor" opacity="0.35"/>
+        <rect x="19" y="27" width="2" height="8" fill="currentColor" opacity="0.45"/>
+        <ellipse cx="20" cy="17" rx="13" ry="11.5" fill="url(#pPolDisc)" stroke="currentColor" stroke-width="1.3"/>
+        <line x1="13" y1="8" x2="13" y2="26" stroke="currentColor" stroke-width="1" opacity="0.55"/>
+        <line x1="16.5" y1="6.5" x2="16.5" y2="27.5" stroke="currentColor" stroke-width="1" opacity="0.7"/>
+        <line x1="20" y1="6" x2="20" y2="28" stroke="currentColor" stroke-width="1.2" opacity="0.85"/>
+        <line x1="23.5" y1="6.5" x2="23.5" y2="27.5" stroke="currentColor" stroke-width="1" opacity="0.7"/>
+        <line x1="27" y1="8" x2="27" y2="26" stroke="currentColor" stroke-width="1" opacity="0.55"/>
+        <ellipse cx="16" cy="12" rx="1.5" ry="2.5" fill="#ffffff" opacity="0.35"/>
+      </svg>`;
+    case TYPES.LASER:
+      return `<svg viewBox="0 0 40 40">
+        <defs>
+          <linearGradient id="pLaserBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="0.35"/>
+            <stop offset="50%" stop-color="currentColor" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0.18"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="20" cy="35" rx="11" ry="2" fill="currentColor" opacity="0.35"/>
+        <rect x="3" y="14" width="22" height="12" rx="2.5" fill="url(#pLaserBody)" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="6" y1="17" x2="22" y2="17" stroke="#ffffff" stroke-width="1" opacity="0.55"/>
+        <line x1="6" y1="22" x2="22" y2="22" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+        <rect x="25" y="17" width="4" height="6" fill="currentColor" opacity="0.85"/>
+        <circle cx="32" cy="20" r="2.5" fill="#ffffff" opacity="0.9"/>
+        <circle cx="32" cy="20" r="5" fill="currentColor" opacity="0.4"/>
+        <line x1="34" y1="20" x2="40" y2="20" stroke="currentColor" stroke-width="2"/>
+        <line x1="34" y1="20" x2="40" y2="20" stroke="#ffffff" stroke-width="0.5" opacity="0.7"/>
+      </svg>`;
+  }
+  return '';
+}
+
+function renderTurn() {
+  const ind = document.getElementById('turn-ind');
+  ind.innerHTML = '';
+  const dot = document.createElement('span');
+  dot.className = 'turn-dot p' + state.turn;
+  const text = document.createElement('span');
+  text.className = 'turn-text';
+  if (state.gameOver) {
+    text.textContent = state.gameOver === P1 ? 'You won' : (state.vsAI ? 'Computer won' : 'Player ' + state.gameOver + ' won');
+  } else if (state.vsAI) {
+    text.textContent = state.turn === P1 ? 'Your move' : 'Computer thinking…';
+  } else {
+    const c = state.turn === P1 ? '#67e8f9' : '#f0abfc';
+    text.innerHTML = `<span style="color:${c}">Player ${state.turn}</span> to move`;
+  }
+  ind.appendChild(dot); ind.appendChild(text);
+}
+
+function renderCaptured() {
+  const c1 = document.getElementById('cap-p1');
+  const c2 = document.getElementById('cap-p2');
+  c1.innerHTML = ''; c2.innerHTML = '';
+  for (const p of state.captured[P1]) c1.appendChild(makeCapIcon(p));
+  for (const p of state.captured[P2]) c2.appendChild(makeCapIcon(p));
+}
+function makeCapIcon(piece) {
+  const wrap = document.createElement('div');
+  wrap.className = 'piece p' + piece.owner;
+  wrap.style.position = 'relative';
+  wrap.style.width = '22px'; wrap.style.height = '22px';
+  wrap.style.inset = 'auto'; wrap.style.opacity = '0.7';
+  wrap.innerHTML = pieceSVG(piece.type);
+  return wrap;
+}
+
+function renderHistory() {
+  const h = document.getElementById('history');
+  h.innerHTML = '';
+  let moveNum = 1;
+  for (let i = 0; i < state.history.length; i += 2) {
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    const num = document.createElement('span'); num.className = 'num'; num.textContent = moveNum + '.';
+    row.appendChild(num);
+    const left = document.createElement('span');
+    left.style.flex = '1'; left.style.color = '#67e8f9';
+    left.textContent = state.history[i]?.text || '';
+    row.appendChild(left);
+    const right = document.createElement('span');
+    right.style.flex = '1'; right.style.textAlign = 'right'; right.style.color = '#f0abfc';
+    right.textContent = state.history[i+1]?.text || '';
+    row.appendChild(right);
+    h.appendChild(row);
+    moveNum++;
+  }
+  h.scrollTop = h.scrollHeight;
+}
+
+function renderActiveRules() {
+  const cfg = DIFFICULTY[state.difficulty];
+  const r = document.getElementById('active-rules');
+  const rules = [
+    '• <b>Laser fires every turn</b> — beam captures',
+    '• Photon: 1–3 sq, can walk-capture',
+    '• Equipment: 1–2 sq, no walk-capture',
+    '• Mirror: rotate to flip / ↔ \\',
+    '• Laser: rotate to change facing'
+  ];
+  if (cfg.polarization) rules.push("• Malus's law on capture");
+  if (cfg.splitterRandomness) rules.push('• Beam splitter: 50/50 quantum');
+  if (cfg.coherence) rules.push('• Coherence decay (5%/sq)');
+  if (cfg.aiDepth >= 2) rules.push('• EO-aware AI (' + cfg.aiDepth + '-ply)');
+  r.innerHTML = rules.join('<br>');
+}
+
+function renderScoreboard() {
+  const mat = computeMaterialLead(P1);
+  const matEl = document.getElementById('sb-material');
+  matEl.textContent = (mat >= 0 ? '+' : '') + mat;
+  matEl.className = 'stat-val ' + (mat > 0 ? 'pos' : mat < 0 ? 'neg' : 'muted');
+  document.getElementById('sb-caps').textContent = state.captured[P1].length;
+  document.getElementById('sb-style').textContent = state.gameStyleP1;
+  if (DIFFICULTY[state.difficulty].coherence) {
+    document.getElementById('sb-coh').textContent = computeCoherenceIndex(P1) + '%';
+    document.getElementById('sb-coh').className = 'stat-val';
+  } else {
+    document.getElementById('sb-coh').textContent = '—';
+    document.getElementById('sb-coh').className = 'stat-val muted';
+  }
+}
+
+function renderRating() {
+  const s = loadStats();
+  document.getElementById('elo-val').textContent = s.elo;
+  const tier = tierFor(s.elo);
+  document.getElementById('tier-val').innerHTML = `<span class="tier-badge ${tier.cls}">${tier.name}</span>`;
+  document.getElementById('record-val').textContent = `${s.wins}W / ${s.losses}L`;
+  const l10 = document.getElementById('last10');
+  l10.innerHTML = '';
+  const last10 = s.last10 || [];
+  for (let i = 0; i < 10; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    if (last10[i] === 'W') dot.classList.add('win');
+    else if (last10[i] === 'L') dot.classList.add('loss');
+    l10.appendChild(dot);
+  }
+  const ratedSession = state.vsAI && state.difficulty !== 'EASY';
+  if (ratedSession) {
+    const { winDelta, lossDelta } = stakeFor(state.difficulty);
+    document.getElementById('stake-win').textContent = '+' + winDelta;
+    document.getElementById('stake-loss').textContent = lossDelta;
+  } else {
+    document.getElementById('stake-win').textContent = '—';
+    document.getElementById('stake-loss').textContent = (state.vsAI ? 'unrated' : '2P');
+  }
+  const dEl = document.getElementById('elo-delta');
+  if (s.lastDelta === null) { dEl.textContent = '—'; dEl.style.color = ''; }
+  else {
+    dEl.textContent = (s.lastDelta >= 0 ? '+' : '') + s.lastDelta;
+    dEl.style.color = s.lastDelta >= 0 ? '#67e8f9' : '#f0abfc';
+  }
+}
+
+// ---------- BEAM PREVIEW ----------
+let beamEl = null;
+function showBeamPreview(from, to) {
+  if (!from || !to) return;
+  clearBeamPreview();
+  const board = document.getElementById('board');
+  const rect = board.getBoundingClientRect();
+  const sqW = rect.width / COLS, sqH = rect.height / ROWS;
+  const cx1 = from.col*sqW + sqW/2, cy1 = from.row*sqH + sqH/2;
+  const cx2 = to.col*sqW + sqW/2,   cy2 = to.row*sqH + sqH/2;
+  const dx = cx2 - cx1, dy = cy2 - cy1;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const angle = Math.atan2(dy, dx);
+  beamEl = document.createElement('div');
+  beamEl.className = 'beam-preview';
+  beamEl.style.left = cx1 + 'px';
+  beamEl.style.top  = cy1 + 'px';
+  beamEl.style.width = dist + 'px';
+  beamEl.style.transform = `rotate(${angle}rad)`;
+  board.appendChild(beamEl);
+}
+function clearBeamPreview() { if (beamEl) { beamEl.remove(); beamEl = null; } }
+
+// ---------- MOVEMENT GUIDE (hover any piece) ----------
+let guidedSquares = [];
+function onStationHover(r, c, sq) {
+  if (!state.showGuide || state.busy || state.gameOver) return;
+  const piece = state.board[r][c];
+  if (!piece) return;
+  // Show legal-moves overlay (use guide- classes so they don't conflict
+  // with the active-selection move-target/move-capture classes)
+  const moves = legalMovesFor(r, c, state.board);
+  for (const m of moves) {
+    const stEl = document.querySelector(`.station[data-row="${m.row}"][data-col="${m.col}"]`);
+    if (!stEl || stEl.classList.contains('move-target') || stEl.classList.contains('move-capture')) continue;
+    stEl.classList.add(m.capture ? 'guide-capture' : 'guide-target');
+    guidedSquares.push(stEl);
+  }
+  showGuideTooltip(piece, sq);
+}
+function onStationLeave(sq) {
+  for (const s of guidedSquares) s.classList.remove('guide-target', 'guide-capture');
+  guidedSquares = [];
+  hideGuideTooltip();
+}
+function showGuideTooltip(piece, sq) {
+  const info = PIECE_INFO[piece.type]; if (!info) return;
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = `
+    <div><span class="gt-name">${PIECE_NAMES[piece.type].toUpperCase()}</span><span class="gt-tag">P${piece.owner}</span></div>
+    <div class="gt-move">${info.tag}</div>
+    <div class="gt-desc">${info.desc}</div>
+    <div class="gt-physics">${info.physics}</div>
+  `;
+  // Position tooltip near the station, but inside the bench wrapper
+  const wrap = document.querySelector('.bench-wrap');
+  const wRect = wrap.getBoundingClientRect();
+  const sRect = sq.getBoundingClientRect();
+  const board = document.getElementById('board');
+  const bRect = board.getBoundingClientRect();
+  const placeRight = sRect.left - wRect.left < (wRect.width / 2);
+  const top = (sRect.top - wRect.top) + sRect.height / 2 - 28;
+  let left;
+  if (placeRight) left = (sRect.right - wRect.left) + 12;
+  else left = (sRect.left - wRect.left) - 12 - 260;
+  tip.style.left = Math.max(8, Math.min(wRect.width - 270, left)) + 'px';
+  tip.style.top  = Math.max(8, Math.min(wRect.height - 160, top)) + 'px';
+  tip.classList.add('show');
+}
+function hideGuideTooltip() {
+  document.getElementById('tooltip').classList.remove('show');
+}
+
+// ---------- INTERACTION ----------
+function onSquareClick(r, c) {
+  if (state.busy || state.gameOver) return;
+  if (state.vsAI && state.turn !== P1) return;
+
+  if (state.selected) {
+    const move = state.legalMovesCache.find(m => m.row === r && m.col === c);
+    if (move) { doPlayerMove(state.selected, {row: r, col: c}, move.capture); return; }
+  }
+  const p = state.board[r][c];
+  if (p && p.owner === state.turn) {
+    state.selected = { row: r, col: c };
+    state.legalMovesCache = legalMovesFor(r, c, state.board);
+    clearBeamPreview();
+    render();
+    return;
+  }
+  state.selected = null;
+  state.legalMovesCache = [];
+  clearBeamPreview();
+  render();
+}
+
+async function doPlayerMove(from, to, isCapture) {
+  state.busy = true;
+  const actor = state.turn;
+  state.selected = null;
+  state.legalMovesCache = [];
+  clearBeamPreview();
+  if (isCapture) await playCaptureAnimation(from, to, actor);
+  const result = applyMove(from, to);
+  if (result.stylePts > 0) showScorePop(to, result.stylePts, actor);
+  render();
+
+  // After every move, the actor's laser fires.
+  if (!state.gameOver) {
+    await fireLaser(actor);
+    render();
+  }
+
+  state.busy = false;
+  if (state.gameOver) return;
+  if (state.vsAI) setTimeout(runAITurn, 350);
+}
+
+async function doPlayerRotate(row, col) {
+  state.busy = true;
+  const actor = state.turn;
+  state.selected = null;
+  state.legalMovesCache = [];
+  clearBeamPreview();
+  const result = applyRotation(row, col);
+  updateShareLinkUrl();
+  render();
+  if (!state.gameOver) {
+    await fireLaser(actor);
+    render();
+  }
+  state.busy = false;
+  if (state.gameOver) return;
+  if (state.vsAI) setTimeout(runAITurn, 350);
+}
+
+async function runAITurn() {
+  if (state.gameOver) return;
+  state.busy = true;
+  renderTurn();
+  await new Promise(res => setTimeout(res, 350));
+  const m = aiMove();
+  if (!m) { state.busy = false; return; }
+  if (m.to.capture) await playCaptureAnimation(m.from, m.to, P2);
+  applyMove(m.from, m.to);
+  render();
+  if (!state.gameOver) {
+    await fireLaser(P2);
+    render();
+  }
+  state.busy = false;
+}
+
+// ---------- ANIMATIONS ----------
+async function playCaptureAnimation(from, to, owner) {
+  const board = document.getElementById('board');
+  const rect = board.getBoundingClientRect();
+  const sqW = rect.width / COLS, sqH = rect.height / ROWS;
+  const cx1 = from.col*sqW + sqW/2, cy1 = from.row*sqH + sqH/2;
+  const cx2 = to.col*sqW + sqW/2,   cy2 = to.row*sqH + sqH/2;
+  const dx = cx2 - cx1, dy = cy2 - cy1;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  const beam = document.createElement('div');
+  beam.className = 'laser-beam' + (owner === P2 ? ' p2' : '');
+  beam.style.left = cx1 + 'px'; beam.style.top = cy1 + 'px';
+  beam.style.width = dist + 'px'; beam.style.transform = `rotate(${angle}deg)`;
+  board.appendChild(beam);
+
+  setTimeout(() => {
+    for (let i = 0; i < 10; i++) {
+      const part = document.createElement('div');
+      part.className = 'particle';
+      const a = (Math.PI * 2 * i) / 10;
+      const r = 14 + Math.random() * 18;
+      part.style.left = cx2 + 'px'; part.style.top = cy2 + 'px';
+      part.style.setProperty('--end', `translate(${Math.cos(a)*r}px, ${Math.sin(a)*r}px)`);
+      part.style.background = owner === P2 ? '#fae8ff' : '#ecfeff';
+      part.style.boxShadow = owner === P2 ? '0 0 10px #e879f9' : '0 0 10px #22d3ee';
+      board.appendChild(part);
+      setTimeout(() => part.remove(), 800);
+    }
+  }, 200);
+
+  await new Promise(res => setTimeout(res, 600));
+  beam.remove();
+}
+
+function showScorePop(at, pts, owner) {
+  const board = document.getElementById('board');
+  const rect = board.getBoundingClientRect();
+  const sqW = rect.width / COLS, sqH = rect.height / ROWS;
+  const pop = document.createElement('div');
+  pop.className = 'score-pop' + (owner === P2 ? ' p2' : '');
+  pop.textContent = '+' + pts + ' SP';
+  pop.style.left = (at.col*sqW + sqW/2 - 22) + 'px';
+  pop.style.top  = (at.row*sqH + sqH/2 - 14) + 'px';
+  board.appendChild(pop);
+  setTimeout(() => pop.remove(), 1500);
+}
+
+// ---------- GAME OVER ----------
+function handleGameOver() {
+  const banner = document.getElementById('gameover');
+  const title = document.getElementById('go-title');
+  const text = document.getElementById('go-text');
+  banner.style.display = 'block';
+  const playerWon = state.gameOver === P1;
+  const ratedSession = state.vsAI && state.difficulty !== 'EASY';
+  let delta = 0;
+  if (ratedSession) delta = applyEloOutcome(playerWon);
+  if (state.vsAI) commitGameStats();
+  if (state.vsAI && playerWon || (!state.vsAI && state.gameOver === P1)) {
+    title.textContent = 'COHERENCE ACHIEVED';
+    text.innerHTML = `Source captured. <span style="color:#67e8f9">+${state.gameStyleP1} style points</span>` +
+      (ratedSession ? ` · Rating ${delta >= 0 ? '+' : ''}${delta}` : '');
+  } else {
+    title.textContent = 'DECOHERENCE';
+    text.innerHTML = state.vsAI ? `Your laser source was extinguished.${ratedSession ? ' Rating ' + (delta >= 0 ? '+' : '') + delta : ''}`
+      : `Player ${state.gameOver}'s laser was destroyed.`;
+  }
+  setTimeout(() => { renderRating(); renderScoreboard(); }, 100);
+}
+
+// ---------- TOAST ----------
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ---------- MODALS ----------
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('show'); }
+document.getElementById('modal-bg').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-bg') closeModal();
+});
+
+function showQuickstart() {
+  openModal(`
+    <div class="meta">QUICKSTART · 60 SECONDS</div>
+    <h2>This is not chess. This is light.</h2>
+    <p>Win by hitting the enemy laser source with your beam. That's the whole game.</p>
+    <div class="qs-step">
+      <div class="qs-num">1</div>
+      <div class="qs-content">
+        <b>Every turn, your laser fires automatically.</b><br>
+        After you do anything (move a piece or rotate one), a beam shoots out of your laser in the direction it's pointing. The beam ricochets off your own mirrors and captures the first enemy piece it hits. If it reaches the enemy laser, you win.
+      </div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">2</div>
+      <div class="qs-content">
+        <b>You don't take pieces by walking onto them.</b><br>
+        Equipment (mirrors, lenses, polarizers) can move around the bench, but bumping into an enemy mirror doesn't capture it — that's not a thing in optics. Only beams capture. (Photons are an exception — colliding photons make sense, so they keep walk-capture.)
+      </div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">3</div>
+      <div class="qs-content">
+        <b>Rotate is your strongest move.</b><br>
+        Click your <b>laser</b> and you'll see a small ↻ button — click it to turn the laser 90°, completely changing where the beam fires. Click your <b>mirror</b> and ↻ flips it / ↔ \\, redirecting any beam that hits it. Rotating is your turn — no movement that turn — but it's often the best play.
+      </div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">4</div>
+      <div class="qs-content">
+        <b>Plan beam paths, not piece moves.</b><br>
+        The strategic question isn't "where do I send my queen." It's: "if I rotate my mirror at d2 to /, the beam from my laser bounces north, then east off another mirror, and lands on the enemy polarizer." You're building optical experiments, in real time, against an opponent doing the same.
+      </div>
+    </div>
+    <p style="margin-top:18px;color:#94a3b8;font-size:13px">Need help reading the board? Toggle <b>Movement guide</b> in the side panel — hover any piece to see what it does.</p>
+    <div class="actions">
+      <button class="ctrl" onclick="closeModal(); state.showGuide = true; renderGuideToggle(); showToast('Movement guide: on');">Turn on guide &amp; play</button>
+      <button class="ctrl primary" onclick="closeModal()">Just play</button>
+    </div>
+  `);
+}
+
+function showRules() {
+  openModal(`
+    <div class="meta">THOUGHTRONS · RULEBOOK</div>
+    <h2>How to play</h2>
+    <p>Each piece is a real optical element. The board is a Thorlabs-style breadboard. Win by capturing the opposing <b>Laser Source</b>.</p>
+    <h2 style="margin-top:14px;font-size:16px">Movement (this is NOT chess)</h2>
+    <table>
+      <tr><th>Piece</th><th>Movement</th><th>Why (physics)</th></tr>
+      <tr><td>Photon</td><td>1–3 sq, 8 directions, straight line</td><td>Light propagates fast in straight lines.</td></tr>
+      <tr><td>Mirror</td><td>1–2 sq, 8 directions</td><td>Bolted to the bench. Slow to reposition.</td></tr>
+      <tr><td>Lens</td><td>1–2 sq, 8 directions</td><td>Same — slow lab kit.</td></tr>
+      <tr><td>Beam Splitter</td><td>L-shape OR 1 sq, 8 directions</td><td>Sits at the junction of two paths.</td></tr>
+      <tr><td>Polarizer</td><td>1–3 sq, 8 directions</td><td>Strongest equipment, but still slow.</td></tr>
+      <tr><td>Laser Source</td><td>1 sq, 8 directions</td><td>Heavy, precious, the piece you must protect.</td></tr>
+    </table>
+    <h2 style="margin-top:14px;font-size:16px">Capture</h2>
+    <p>Move onto an enemy piece to capture. <b>BUT</b> the EO rules apply:</p>
+    <div class="physics-note">
+      Malus's law: I = I₀·cos²(Δθ). Capturing across mismatched polarization succeeds with probability cos²(Δθ).
+      Same axis → guaranteed. 45° → 50%. Perpendicular → blocked. <b>Failed captures absorb the attacker</b>.
+    </div>
+    <p>Beam splitter override: any capture involving a Beam Splitter is a forced 50/50, regardless of polarization. Quantum gambling.</p>
+    <h2 style="margin-top:14px;font-size:16px">Difficulty scales rules</h2>
+    <table>
+      <tr><th>Level</th><th>Active rules</th><th>AI</th></tr>
+      <tr><td>Easy</td><td>Movement only</td><td>Mostly random</td></tr>
+      <tr><td>Medium</td><td>+ Polarization, beam splitters</td><td>1-ply minimax</td></tr>
+      <tr><td>Hard</td><td>+ Coherence decay</td><td>2-ply alpha-beta</td></tr>
+    </table>
+    <div class="actions"><button class="ctrl primary" onclick="closeModal()">Got it</button></div>
+  `);
+}
+
+function showScoringModal() {
+  const stats = loadStats();
+  const tier = tierFor(stats.elo);
+  openModal(`
+    <div class="meta">SCORING &amp; RATING · EXPLAINED</div>
+    <h2>Scoreboard (per game)</h2>
+    <table>
+      <tr><th>Stat</th><th>Meaning</th></tr>
+      <tr><td><b>Material lead</b></td><td>Σ(your piece values) − Σ(opponent's). Excludes the laser source. Positive = you're ahead.</td></tr>
+      <tr><td><b>Captures</b></td><td>Pieces you've taken from the opponent.</td></tr>
+      <tr><td><b>Style points</b></td><td>Bonus for risky/precise EO play (see below).</td></tr>
+      <tr><td><b>Coherence index</b></td><td>(Hard only) Average coherence of your remaining pieces.</td></tr>
+    </table>
+    <h2 style="margin-top:18px">Style point bonuses</h2>
+    <table>
+      <tr><th>Trigger</th><th class="right">Points</th></tr>
+      <tr><td>Capture via beam splitter (quantum gamble)</td><td class="right">+5</td></tr>
+      <tr><td>Photon captures piece worth ≥ 3</td><td class="right">+4</td></tr>
+      <tr><td>Photon captures a Polarizer</td><td class="right">+10</td></tr>
+      <tr><td>Successful Malus capture across 45° axis</td><td class="right">+3</td></tr>
+      <tr><td>Polarizer absorbs an attacker (defender bonus)</td><td class="right">+2</td></tr>
+      <tr><td>Capturing the Laser Source (game-winning)</td><td class="right">+25</td></tr>
+    </table>
+    <p style="font-size:12px;color:#94a3b8">Style points roll up to a lifetime total. They don't affect ELO — they're a parallel ladder rewarding elegant play.</p>
+    <h2 style="margin-top:18px">Piece values</h2>
+    <table>
+      <tr><th>Piece</th><th class="right">Value</th></tr>
+      <tr><td>Photon</td><td class="right">2</td></tr>
+      <tr><td>Mirror</td><td class="right">3</td></tr>
+      <tr><td>Lens</td><td class="right">3</td></tr>
+      <tr><td>Beam Splitter</td><td class="right">4</td></tr>
+      <tr><td>Polarizer</td><td class="right">7</td></tr>
+      <tr><td>Laser Source</td><td class="right">∞ (game-ending)</td></tr>
+    </table>
+    <h2 style="margin-top:18px">Rating system (ELO)</h2>
+    <p>Standard ELO with K = 32. After each rated game, your rating moves toward the expected outcome.</p>
+    <div class="physics-note">
+      E = 1 / (1 + 10^((R_opp − R_you) / 400))<br>
+      ΔR = 32 · (S − E) &nbsp;&nbsp;where S = 1 (win) or 0 (loss)
+    </div>
+    <p>Rated games are vs. Computer at Medium or Hard. Easy games and 2-Player games are unrated. AI virtual ratings: <b>Easy 800 · Medium 1300 · Hard 1700</b>.</p>
+    <h2 style="margin-top:18px">Tiers</h2>
+    <table>
+      <tr><td><span class="tier-badge tier-trainee">TRAINEE</span></td><td class="right">below 1200</td></tr>
+      <tr><td><span class="tier-badge tier-apprentice">APPRENTICE</span></td><td class="right">1200 – 1399</td></tr>
+      <tr><td><span class="tier-badge tier-adjunct">ADJUNCT</span></td><td class="right">1400 – 1599</td></tr>
+      <tr><td><span class="tier-badge tier-researcher">RESEARCHER</span></td><td class="right">1600 – 1799</td></tr>
+      <tr><td><span class="tier-badge tier-senior">SENIOR</span></td><td class="right">1800 – 1999</td></tr>
+      <tr><td><span class="tier-badge tier-principal">PRINCIPAL</span></td><td class="right">2000+</td></tr>
+    </table>
+    <h2 style="margin-top:18px">Lifetime stats</h2>
+    <table>
+      <tr><td>Lifetime captures</td><td class="right">${stats.lifetimeCaptures}</td></tr>
+      <tr><td>Lifetime style points</td><td class="right">${stats.lifetimeStyle}</td></tr>
+      <tr><td>Current ELO</td><td class="right">${stats.elo} <span class="tier-badge ${tier.cls}" style="margin-left:8px">${tier.name}</span></td></tr>
+    </table>
+    <div class="actions"><button class="ctrl primary" onclick="closeModal()">Close</button></div>
+  `);
+}
+
+const TUTORIAL = [
+  {
+    title: '01 · The optical bench',
+    body: 'You\'re looking at a 200 × 200 mm <b>optical breadboard</b> — the same kind real optics labs build experiments on. The grid is the M6 hole pattern. Each station holds one piece. The mm scale on the edges is real.',
+    note: 'Optical breadboards have tapped holes on a regular grid (typically 25 mm centers) so any optical mount can be screwed down at any position.'
+  },
+  {
+    title: '02 · Movement is physics, not chess',
+    body: '<b>Photons</b> propagate — they go in straight lines, up to 3 squares, in any of 8 directions. They\'re your fastest piece. <b>Equipment</b> (mirrors, lenses, polarizers, the laser) is bolted to the bench, so it\'s slow — 1–2 squares per turn. This is the deepest difference from chess: the small glowing dots are now the long-range strikers, not the pawns.',
+    note: 'The piece movement here is grounded in the physics: photons move fast (in optics they travel at c, the speed of light), and equipment is heavy, mounted on posts, awkward to reposition.'
+  },
+  {
+    title: '03 · The movement guide',
+    body: 'Open the side panel and switch on <b>Movement guide</b>. Now hover any piece (yours <i>or</i> the opponent\'s) and the squares it can reach light up, plus a tooltip explains what the piece does in real optics. The fastest way to learn the game.',
+    note: 'Designed so you don\'t need to memorize movement rules — you can read them off the board itself.'
+  },
+  {
+    title: '04 · Polarization (Medium &amp; Hard)',
+    body: 'Each piece carries a <b>polarization axis</b>, drawn as a tick mark across it. Capturing across mismatched axes follows <b>Malus\'s law</b>: P(success) = cos²(Δθ). Same axis = sure thing. 45° = coin flip. Perpendicular = blocked, and your attacker is <b>absorbed</b>.',
+    note: 'Two crossed polarizers transmit no light. You can verify this at home: stack two pairs of polarizing sunglasses and rotate one — at 90° the pair goes black.'
+  },
+  {
+    title: '05 · Beam splitters are quantum',
+    body: 'Any capture involving a <b>beam splitter</b> is a true 50/50. The BS doesn\'t care about polarization, only quantum chance. You can\'t plan around BS interactions deterministically; you plan with expected value.',
+    note: 'A 50:50 beam splitter routes a single photon to either output port with equal probability.'
+  },
+  {
+    title: '06 · Scoring and rating',
+    body: 'You earn <b>material lead</b> by capturing pieces, <b>style points</b> for risky or precise play, and a <b>coherence index</b> on Hard. Every rated win shifts your ELO. Tap <b>Scoring</b> for the full table.',
+    note: 'Style points are a parallel ladder. ELO measures wins; style points measure how interesting the wins were.'
+  },
+  {
+    title: '07 · Win condition',
+    body: 'Capture the opposing <b>Laser Source</b>. There is no "check" — leave it exposed and a legal capture ends the game immediately.',
+    note: 'A laser cavity decoheres the moment its mirrors are destroyed. Endings are sudden by design.'
+  }
+];
+function showTutorial(step = 0) {
+  if (step >= TUTORIAL.length) { closeModal(); return; }
+  const t = TUTORIAL[step];
+  openModal(`
+    <div class="meta">TUTORIAL · ${step + 1} of ${TUTORIAL.length}</div>
+    <h2>${t.title}</h2>
+    <p>${t.body}</p>
+    <div class="physics-note">${t.note}</div>
+    <div class="actions">
+      ${step > 0 ? '<button class="ctrl" onclick="showTutorial('+(step-1)+')">Back</button>' : ''}
+      <button class="ctrl primary" onclick="${step === TUTORIAL.length - 1 ? 'closeModal()' : 'showTutorial('+(step+1)+')'}">${step === TUTORIAL.length - 1 ? 'Start playing' : 'Next'}</button>
+    </div>
+  `);
+}
+
+// ---------- SHARE LINK (correspondence-style 2P) ----------
+const TYPE_CODES = { photon:'0', mirror:'1', lens:'2', splitter:'3', polarizer:'4', laser:'5' };
+const TYPE_FROM_CODE = { '0':'photon', '1':'mirror', '2':'lens', '3':'splitter', '4':'polarizer', '5':'laser' };
+const POL_FROM_CODE  = { '0':0, '1':45, '2':90 };
+const POL_CODES      = { 0:'0', 45:'1', 90:'2' };
+
+function packState() {
+  let cells = '';
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = state.board[r][c];
+    if (!p) cells += '...';
+    else cells += `${TYPE_CODES[p.type]}${p.owner}${POL_CODES[p.polarization] ?? '0'}`;
+  }
+  return cells;
+}
+function unpackBoard(str) {
+  const board = Array.from({length:8}, () => Array(8).fill(null));
+  if (str.length !== 192) return null;
+  for (let i = 0; i < 64; i++) {
+    const cell = str.substr(i*3, 3);
+    if (cell === '...') continue;
+    const r = Math.floor(i/8), c = i%8;
+    const t = TYPE_FROM_CODE[cell[0]];
+    if (!t) return null;
+    board[r][c] = {
+      type: t, owner: parseInt(cell[1]),
+      polarization: POL_FROM_CODE[cell[2]] ?? 0,
+      coherence: 100,
+      id: Math.random().toString(36).slice(2)
+    };
+  }
+  return board;
+}
+function buildShareUrl() {
+  const params = new URLSearchParams();
+  params.set('s', packState());
+  params.set('t', state.turn);
+  params.set('d', state.difficulty);
+  params.set('m', state.vsAI ? 'ai' : 'pvp');
+  params.set('p1sp', state.gameStyleP1);
+  params.set('p2sp', state.gameStyleP2);
+  return location.origin + location.pathname + '#' + params.toString();
+}
+function updateShareLinkUrl() {
+  if (!state.vsAI) {
+    try { history.replaceState(null, '', '#' + buildShareUrl().split('#')[1]); } catch {}
+  }
+}
+function loadFromHash() {
+  const hash = location.hash;
+  if (!hash || hash.length < 2) return false;
+  const params = new URLSearchParams(hash.slice(1));
+  const s = params.get('s'); if (!s) return false;
+  const board = unpackBoard(s); if (!board) return false;
+  return {
+    board,
+    turn: parseInt(params.get('t')) || P1,
+    difficulty: ['EASY','MEDIUM','HARD'].includes(params.get('d')) ? params.get('d') : 'MEDIUM',
+    vsAI: (params.get('m') || 'ai') === 'ai',
+    p1sp: parseInt(params.get('p1sp')) || 0,
+    p2sp: parseInt(params.get('p2sp')) || 0
+  };
+}
+
+function showShareModal() {
+  const url = buildShareUrl();
+  const turnLabel = state.turn === P1 ? 'Player 1 (cyan)' : 'Player 2 (magenta)';
+  openModal(`
+    <div class="meta">SHARE · 2-PLAYER GAME</div>
+    <h2>Send this link to your opponent</h2>
+    <p>It's <b>${turnLabel}</b>'s turn. Send them this URL — when they open it they'll see the current board and play their move. After they move, they send the new URL back to you.</p>
+    <div class="share-link-box">
+      <input id="share-input" value="${url}" readonly onclick="this.select()">
+      <button class="ctrl primary" onclick="navigator.clipboard.writeText(document.getElementById('share-input').value).then(()=>showToast('Link copied'))">Copy</button>
+    </div>
+    <p style="font-size:12px;color:#94a3b8">No server, no signup — the entire game state lives in the URL. Bookmark it to resume later.</p>
+    <div class="actions"><button class="ctrl primary" onclick="closeModal()">Done</button></div>
+  `);
+}
+
+function syncOpponentControls() {
+  const sel = document.getElementById('opp-select');
+  sel.value = state.vsAI ? 'ai' : 'human';
+  document.getElementById('btn-share').style.display = state.vsAI ? 'none' : '';
+}
+
+// ---------- WIRE UP ----------
+document.getElementById('btn-quickstart').addEventListener('click', showQuickstart);
+document.getElementById('btn-tutorial').addEventListener('click', () => showTutorial(0));
+document.getElementById('btn-rules').addEventListener('click', showRules);
+document.getElementById('btn-scoring').addEventListener('click', showScoringModal);
+document.getElementById('btn-share').addEventListener('click', showShareModal);
+document.getElementById('btn-new').addEventListener('click', () => {
+  history.replaceState(null, '', location.pathname);
+  newGame();
+  showToast('New game · ' + DIFFICULTY[state.difficulty].label);
+});
+document.getElementById('opp-select').addEventListener('change', (e) => {
+  state.vsAI = e.target.value === 'ai';
+  document.getElementById('btn-share').style.display = state.vsAI ? 'none' : '';
+  history.replaceState(null, '', location.pathname);
+  newGame();
+});
+document.querySelectorAll('.diff-pill').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.diff-pill').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    state.difficulty = el.dataset.d;
+    renderActiveRules(); renderRating(); renderScoreboard();
+    showToast('Difficulty: ' + DIFFICULTY[state.difficulty].label);
+  });
+});
+document.getElementById('guide-toggle').addEventListener('click', () => {
+  state.showGuide = !state.showGuide;
+  renderGuideToggle();
+  showToast(state.showGuide ? 'Movement guide: on' : 'Movement guide: off');
+});
+document.getElementById('guide-row').addEventListener('click', (e) => {
+  if (e.target.id === 'guide-toggle' || e.target.closest('#guide-toggle')) return;
+  document.getElementById('guide-toggle').click();
+});
+
+// ---------- LANDING DISMISS ----------
+function dismissLanding() {
+  const l = document.getElementById('landing');
+  if (!l || l.classList.contains('dismissed')) return;
+  l.classList.add('dismissed');
+  setTimeout(() => l.remove(), 700);
+}
+document.getElementById('landing').addEventListener('click', dismissLanding);
+document.getElementById('landing-go').addEventListener('click', (e) => { e.stopPropagation(); dismissLanding(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    if (document.getElementById('landing') && !document.getElementById('landing').classList.contains('dismissed')) {
+      dismissLanding();
+    }
+  }
+}, { once: false });
+
+// ---------- BOOT ----------
+const loaded = loadFromHash();
+if (loaded) {
+  // Skip landing for shared games — go straight to the position
+  dismissLanding();
+  newGame(loaded);
+  showToast(`Loaded shared game — Player ${state.turn} to move`);
+} else {
+  newGame();
+  if (!localStorage.getItem('thoughtrons-seen')) {
+    try { localStorage.setItem('thoughtrons-seen', '1'); } catch {}
+    setTimeout(() => showQuickstart(), 4500); // wait for landing to be dismissed
+  }
+}
+</script>
+</body>
+</html>
